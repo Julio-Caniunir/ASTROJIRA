@@ -405,16 +405,15 @@ export default function JiraIssues() {
                           <div
                             key={issue.key}
                             onClick={() => openModal(issue)}
-                            className={`${styles.issueCard} ${issue.fields.status.name === 'Done' ? styles.done : ''}`}>
-                            <div>
-                              <p className={styles.issueSummary}>{issue.fields.summary}</p>
-                            </div>
-                            <div className={styles.issueMeta}>
-                              <span className={styles.issueKey}>{issue.key}</span>
-                              <span className={styles.issueAssignee}>
-                                {issue.fields.assignee ? issue.fields.assignee.displayName : 'Unassigned'}
-                              </span>
-                            </div>
+                            className={cardClass}
+                          >
+                            <strong>
+                              {issue.key} <span title="T&C completados">🟢</span>
+                              {isSegmented && ' 📦'}
+                              {isTournament && ' 🏆'}
+                              {isPromotion && ' 🎁'}
+                            </strong>
+                            <p>{issue.fields.summary}</p>
                           </div>
                         );
                       })}
@@ -481,16 +480,15 @@ export default function JiraIssues() {
                     <div
                       key={issue.key}
                       onClick={() => openModal(issue)}
-                      className={`${styles.issueCard} ${issue.fields.status.name === 'Done' ? styles.done : ''}`}>
-                      <div>
-                        <p className={styles.issueSummary}>{issue.fields.summary}</p>
-                      </div>
-                      <div className={styles.issueMeta}>
-                        <span className={styles.issueKey}>{issue.key}</span>
-                        <span className={styles.issueAssignee}>
-                          {issue.fields.assignee ? issue.fields.assignee.displayName : 'Unassigned'}
-                        </span>
-                      </div>
+                      className={cardClass}
+                    >
+                      <strong>
+                        {issue.key} <span title="Faltan publicar T&C">🔴</span>
+                        {isSegmented && ' 📦'}
+                        {isTournament && ' 🏆'}
+                        {isPromotion && ' 🎁'}
+                      </strong>
+                      <p>{issue.fields.summary}</p>
                     </div>
                   );
                 })}
@@ -520,50 +518,86 @@ export default function JiraIssues() {
             </div>
 
             <div className={styles.modalBody}>
+              {/* Columna izquierda */}
               <div className={styles.columnLeft}>
-                <div className={styles.infoBlock}>
-                  <h3>Descripción</h3>
-                  <div className={styles.adfDescription}>
-                    {renderADFToReact(selectedIssue.fields.description)}
-                  </div>
-                </div>
-                <div className={styles.infoBlock}>
-                  <h3>Sub-tareas</h3>
-                  {selectedIssue.fields.subtasks?.length ? (
-                    <ul className={styles.subtaskList}>
-                      {selectedIssue.fields.subtasks.map((subtask) => (
-                        <li key={subtask.key} className={styles.subtaskItem}>
-                          <span>{subtask.fields.status.name === 'Done' ? '🟢' : '🔴'}</span>
-                          <button onClick={() => openSubtask(subtask.key)} className={styles.subtaskButton}>
-                            {subtask.fields.summary}
-                          </button>
+                {selectedIssue.fields.duedate && (
+                  <p>📅 <strong>Fecha límite:</strong> {new Date(selectedIssue.fields.duedate).toLocaleDateString()}</p>
+                )}
+                {selectedIssue.fields.assignee?.displayName && (
+                  <p>👤 <strong>Responsable:</strong> {selectedIssue.fields.assignee.displayName}</p>
+                )}
+                {selectedIssue.fields.priority?.name && (
+                  <p>⚡ <strong>Prioridad:</strong> {selectedIssue.fields.priority.name}</p>
+                )}
+                {selectedIssue.fields.labels && selectedIssue.fields.labels.length > 0 && (
+                  <p>🏷️ <strong>Etiquetas:</strong> {selectedIssue.fields.labels.join(', ')}</p>
+                )}
+
+                {(selectedIssue.fields as any).attachment?.length > 0 && (
+                  <div className={styles.attachmentsSection}>
+                    <h4>📎 Archivos adjuntos:</h4>
+                    <ul className={styles.attachmentList}>
+                      {(selectedIssue.fields as any).attachment?.map((file: any) => (
+                        <li key={file.id}>
+                          <a href={file.content} target="_blank" rel="noopener noreferrer">
+                            📄 {file.filename} ({(file.size / 1024).toFixed(1)} KB)
+                          </a>
                         </li>
                       ))}
                     </ul>
-                  ) : (
-                    <p className={styles.noSubtasks}>No hay subtareas.</p>
-                  )}
-                </div>
-              </div>
-              <div className={styles.columnRight}>
-                <div className={styles.infoBlock}>
-                  <strong>Estado</strong>
-                  <p>{selectedIssue.fields.status.name}</p>
-                </div>
-                <div className={styles.infoBlock}>
-                  <strong>Asignado a</strong>
-                  <p>{selectedIssue.fields.assignee ? selectedIssue.fields.assignee.displayName : 'Sin asignar'}</p>
-                </div>
-                <div className={styles.infoBlock}>
-                  <strong>Vencimiento</strong>
-                  <p>{selectedIssue.fields.duedate ? new Date(selectedIssue.fields.duedate).toLocaleDateString() : 'No establecido'}</p>
-                </div>
-                <div className={styles.infoBlock}>
-                  <strong>Prioridad</strong>
-                  <p>{selectedIssue.fields.priority ? selectedIssue.fields.priority.name : 'No establecido'}</p>
-                </div>
-              </div>
-            </div>
+                  </div>
+                )}
+                {selectedIssue.fields.subtasks?.length ? (
+                  <div className={styles.subtaskSection}>
+                    <h4>📋 Subtareas:</h4>
+                    <ul className={styles.subtaskList}>
+                      {selectedIssue.fields.subtasks.map((subtask) => {
+                        const summary = subtask.fields.summary.toLowerCase();
+                        const isTyc = summary.includes('publicación de banners y t&c') || summary.includes('publicación de landing y t&c');
+                        const isDone = subtask.fields.status.name.toLowerCase() === 'done';
+
+                        return (
+                          <li key={subtask.key} className={styles.subtaskItem}>
+                            {/* Icono de estado */}
+                            <span>{isDone ? '🟢' : '🔴'}</span>
+
+                            {/* Botón estilo original */}
+                            <button
+                              onClick={() => openSubtask(subtask.key)}
+                              className={styles.subtaskButton}
+                            >
+                              <strong style={{ color: '#0033cc' }}>{subtask.key}</strong>: {subtask.fields.summary} —{' '}
+                              {!isTyc && <em>{subtask.fields.status.name}</em>}
+                            </button>
+
+                            {/* Dropdown solo si es TYC */}
+                            {isTyc && (
+                              <Select
+                                value={{
+                                  label: displayMap[subtask.fields.status.name] || subtask.fields.status.name,
+                                  value: subtask.fields.status.name,
+                                }}
+                                options={statusOptions
+                                  .filter((status) => ['To Do', 'Done'].includes(status))
+                                  .map((status) => ({
+                                    label: `${status === 'Done' ? '🟢' : '🔴'} ${displayMap[status] || status}`,
+                                    value: status,
+                                  }))
+                                }
+
+                                onChange={async (selectedOption) => {
+                                  const newStatus = selectedOption?.value;
+                                  if (!newStatus || newStatus === subtask.fields.status.name) return;
+
+                                  try {
+                                    const res = await fetch(`/api/issue/${subtask.key}`, {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ newStatus }),
+                                    });
+
+                                    if (!res.ok) throw new Error();
+                                    alert(`✅ Estado actualizado a ${newStatus}`);
                                     await openModal(selectedIssue);
                                   } catch (err) {
                                     alert('❌ No se pudo actualizar el estado');
