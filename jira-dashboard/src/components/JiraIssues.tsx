@@ -388,13 +388,13 @@ export default function JiraIssues() {
                             onClick={() => openModal(issue)}
                             className={cardClass}
                           >
-                            <div className={styles.issueSummary}>{issue.fields.summary}</div>
-                            <div className={styles.issueMeta}>
-                              <span className={styles.issueKey}>{issue.key}</span>
-                              <span className={styles.issueAssignee}>
-                                {issue.fields.assignee ? issue.fields.assignee.displayName : 'Unassigned'}
-                              </span>
-                            </div>
+                            <strong>
+                              {issue.key} <span title="T&C completados">🟢</span>
+                              {isSegmented && ' 📦'}
+                              {isTournament && ' 🏆'}
+                              {isPromotion && ' 🎁'}
+                            </strong>
+                            <p>{issue.fields.summary}</p>
                           </div>
                         );
                       })}
@@ -463,13 +463,13 @@ export default function JiraIssues() {
                       onClick={() => openModal(issue)}
                       className={cardClass}
                     >
-                      <div className={styles.issueSummary}>{issue.fields.summary}</div>
-                      <div className={styles.issueMeta}>
-                        <span className={styles.issueKey}>{issue.key}</span>
-                        <span className={styles.issueAssignee}>
-                          {issue.fields.assignee ? issue.fields.assignee.displayName : 'Unassigned'}
-                        </span>
-                      </div>
+                      <strong>
+                        {issue.key} <span title="Faltan publicar T&C">🔴</span>
+                        {isSegmented && ' 📦'}
+                        {isTournament && ' 🏆'}
+                        {isPromotion && ' 🎁'}
+                      </strong>
+                      <p>{issue.fields.summary}</p>
                     </div>
                   );
                 })}
