@@ -1,157 +1,127 @@
 /* -------- Base Styles -------- */
 :root {
-  --primary: #0052cc; /* Jira Blue */
-  --danger: #de350b; /* Jira Red */
-  --success: #00875a; /* Jira Green */
-  --warning: #ffab00; /* Jira Yellow */
-  --bg: #f4f5f7; /* Jira Light Gray */
-  --text-main: #172b4d; /* Jira Dark Blue */
-  --text-muted: #5e6c84; /* Jira Medium Gray */
-  --card-bg: #ffffff;
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --border-radius: 8px; /* Slightly larger radius */
-  --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  --primary: #0310c2;
+  --danger: #ff4d4f;
+  --bg: #f0f2f5;
+  --text-main: #0e0b0b;
+  --text-muted: #ffffff;
+  --card-bg: #fff;
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --border-radius: 8px;
+  --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body {
   font-family: var(--font-main);
   color: var(--text-main);
-  background-image: url('/background.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
   margin: 0;
   padding: 0;
+  position: relative;
+  overflow-x: hidden;
 }
 
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('https://images3.alphacoders.com/134/thumb-1920-1348349.png');
+  background-size: cover;
+  background-position: center;
+  filter: blur(1px);
+  opacity: 0.8;
+  z-index: -1;
+}
 /* -------- Layout Containers -------- */
 .wrapper {
   display: flex;
   justify-content: center;
-  padding: 2rem 1rem; /* Adjusted padding */
+  padding: 2rem;
   min-height: 100vh;
-  background-color: rgba(244, 245, 247, 0.85);
-  backdrop-filter: blur(10px);
 }
 
 .container {
-  width: 100%;
-  max-width: 1400px; /* Wider container */
+  position: relative;
 }
 
 .issueSection {
-  background: transparent; /* Remove background */
-  border-radius: 0;
-  padding: 0;
-  box-shadow: none; /* Remove shadow */
-  margin-bottom: 2rem;
+  padding: 2rem;
 }
 
 .issueList {
   width: 100%;
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: var(--card-shadow);
 }
 
 /* -------- Titles & Text -------- */
 .title {
-  font-size: 2rem; /* Larger title */
-  font-weight: 600;
-  color: var(--text-main);
-  margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #ccc;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 1rem;
+}.title1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1rem;
 }
-
 .loading,
 .empty,
 .noComments,
 .noSubtasks {
   color: var(--text-muted);
-  font-size: 1.1rem; /* Larger text */
-  text-align: center;
-  padding: 3rem;
+  font-size: 0.95rem;
 }
 
-/* -------- Issue Grid -------- */
+/* -------- Issue Grid in Vertical Flow -------- */
 .issueGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); /* Wider cards */
-  gap: 2rem;
+  display: flex;
+  flex-direction: column;  /* Columna única */
+  gap: 1rem;
+  padding: 1rem 0;
 }
 
 /* -------- Issue Cards -------- */
 .issueCard {
-  background: var(--card-bg);
-  border: 1px solid #dfe1e6;
-  border-left: 6px solid var(--primary);
-  padding: 1.5rem;
-  border-radius: var(--border-radius);
+  background: #fafafa;
+  border-left: 4px solid var(--primary);
+  padding: 1rem;
+  border-radius: 6px;
   cursor: pointer;
-  box-shadow: var(--card-shadow);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 140px; /* Taller cards */
+  width: 80%; /* Ocupa todo el ancho del contenedor */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, background 0.2s ease;
 }
 
 .issueCard:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1), 0 3px 8px rgba(0, 0, 0, 0.08);
-  border-left-color: var(--danger);
-}
-
-.issueCard.done {
-  border-left-color: var(--success);
+  background: #eef7ff;
+  transform: translateY(-2px);
 }
 
 .issueSummary {
-  font-size: 1.2rem; /* Larger summary */
-  font-weight: 600; /* Bolder summary */
-  margin-bottom: 1rem;
-}
-
-.issueMeta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  margin-top: auto;
-}
-
-.issueKey {
-  font-weight: 500;
-  background-color: #e9ecef;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-}
-
-.issueAssignee {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
 }
 
 /* -------- Collapsible Groups -------- */
 .collapsibleGroup {
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .collapsibleToggle {
   background: none;
   border: none;
-  font-weight: 600;
-  font-size: 1.6rem;
-  color: var(--text-main);
+  font-weight: bold;
+  font-size: 1.1rem;
   cursor: pointer;
   width: 100%;
   text-align: left;
   padding: 0.5rem 0;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
 }
 
 /* -------- Modal Overlay -------- */
@@ -161,79 +131,72 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(9, 30, 66, 0.7); /* Darker overlay */
-  z-index: 1000;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 999;
   display: flex;
   justify-content: center;
-  align-items: center; /* Centered */
-  padding: 2rem;
-  overflow-y: auto;
+  align-items: center;
+  padding: 1rem;
 }
 
 /* -------- Modal Content -------- */
 .modalContent {
-  background: var(--bg);
+  position: relative; /* ✅ Necesario para posicionar la ❌ correctamente */
+  background: var(--card-bg);
   border-radius: var(--border-radius);
-  padding: 0;
+  padding: 2rem;
   width: 100%;
-  max-width: 1000px; /* Wider modal */
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--card-shadow);
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) transparent;
   display: flex;
   flex-direction: column;
-  gap: 0;
-  max-height: 90vh;
-  overflow: hidden;
+  gap: 1rem;
+  align-self: center;
 }
 
 .modalHeader {
-  padding: 1.5rem 2.5rem;
-  border-bottom: 1px solid #dfe1e6;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: var(--card-bg);
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.5rem;
 }
 
 .modalBody {
-  padding: 2.5rem;
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 2.5rem;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  flex-wrap: wrap;
 }
-
 .columnLeft,
 .columnRight {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+  flex: 1;
+  min-width: 300px;
 }
 
-.infoBlock {
-  background: var(--card-bg);
-  padding: 1.5rem;
-  border-radius: var(--border-radius);
-  border: 1px solid #dfe1e6;}
-
-.infoBlock strong {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+.columnLeft p {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.95rem;
 }
 
-.infoBlock p {
-  margin: 0;
-  font-size: 1rem;
+.columnLeft strong {
+  color: var(--primary);
+}
+.modalContent::-webkit-scrollbar {
+  width: 6px;
+}
+.modalContent::-webkit-scrollbar-thumb {
+  background-color: var(--primary);
+  border-radius: 6px;
 }
 
 /* -------- Descriptions -------- */
 .adfDescription {
-  background: var(--card-bg);
-  padding: 1rem 1.5rem;
-  border-radius: var(--border-radius);
-  border: 1px solid #dfe1e6;
-  font-size: 1rem;
+  background: #f7f7f7;
+  padding: 1rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
   line-height: 1.6;
   color: #333;
   white-space: pre-wrap;
