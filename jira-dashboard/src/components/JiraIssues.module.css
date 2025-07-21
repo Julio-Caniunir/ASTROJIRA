@@ -4,7 +4,7 @@
   --danger: #de350b; /* Jira Red */
   --success: #00875a; /* Jira Green */
   --warning: #ffab00; /* Jira Yellow */
-  --bg: #f4f5f7; /* Jira Light Gray */
+  background-image: url('/background.svg');
   --text-main: #172b4d; /* Jira Dark Blue */
   --text-muted: #5e6c84; /* Jira Medium Gray */
   --card-bg: #ffffff;
