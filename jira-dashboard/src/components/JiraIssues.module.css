@@ -16,7 +16,11 @@
 body {
   font-family: var(--font-main);
   color: var(--text-main);
-  background-color: var(--bg);
+  background-image: url('/background.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   margin: 0;
   padding: 0;
 }
@@ -27,6 +31,8 @@ body {
   justify-content: center;
   padding: 2rem 1rem; /* Adjusted padding */
   min-height: 100vh;
+  background-color: rgba(244, 245, 247, 0.85);
+  backdrop-filter: blur(10px);
 }
 
 .container {
