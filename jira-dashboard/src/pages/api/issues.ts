@@ -8,6 +8,11 @@ export const GET: APIRoute = async () => {
   const domain = import.meta.env.JIRA_DOMAIN;
   const project = import.meta.env.JIRA_PROJECT_KEY;
 
+  if (!email || !token || !domain || !project) {
+    console.error('Faltan variables de entorno de Jira. Asegúrate de que JIRA_EMAIL, JIRA_TOKEN, JIRA_DOMAIN y JIRA_PROJECT_KEY estén configuradas en Netlify.');
+    return new Response(JSON.stringify({ error: 'Error de configuración del servidor: faltan credenciales de Jira.' }), { status: 500 });
+  }
+
   const auth = Buffer.from(`${email}:${token}`).toString('base64');
 
   // JQL para traer solo issues del estado "PUBLICACIÓN DE PIEZAS"

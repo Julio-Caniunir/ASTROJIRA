@@ -170,6 +170,7 @@ type SubtaskDetail = IssueDetail;
 export default function JiraIssues() {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedIssue, setSelectedIssue] = useState<IssueDetail | null>(null);
   const [selectedSubtask, setSelectedSubtask] = useState<SubtaskDetail | null>(null);
   const [showGreenIssues, setShowGreenIssues] = useState(true);
@@ -245,7 +246,12 @@ export default function JiraIssues() {
 
     const fetchIssues = () => {
       fetch('/api/issues')
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error('Error al cargar las issues. Verifica las variables de entorno en Netlify.');
+          }
+          return res.json();
+        })
         .then((data) => {
           if (!isMounted) return;
           const filtered = (data.issues || []).filter((issue: Issue) =>
@@ -253,7 +259,12 @@ export default function JiraIssues() {
           );
           setIssues(filtered);
         })
-        .catch((err) => console.error('Error cargando issues:', err))
+        .catch((err) => {
+          console.error('Error cargando issues:', err);
+          if (isMounted) {
+            setError((err as Error).message);
+          }
+        })
         .finally(() => {
           if (isMounted) setLoading(false);
         });
@@ -326,6 +337,14 @@ export default function JiraIssues() {
 
 
   const closeSubtask = () => setSelectedSubtask(null);
+
+  if (loading) {
+    return <div>Cargando...</div>;
+  }
+
+  if (error) {
+    return <div className={styles.errorContainer}>{error}</div>;
+  }
 
   return (
     <div className={styles.container}>
