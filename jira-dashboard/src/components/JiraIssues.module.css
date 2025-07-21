@@ -1,0 +1,681 @@
+/* -------- Base Styles -------- */
+:root {
+  --primary: #0310c2;
+  --danger: #ff4d4f;
+  --bg: #f0f2f5;
+  --text-main: #0e0b0b;
+  --text-muted: #ffffff;
+  --card-bg: #fff;
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --border-radius: 8px;
+  --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  font-family: var(--font-main);
+  color: var(--text-main);
+  margin: 0;
+  padding: 0;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: url('https://images3.alphacoders.com/134/thumb-1920-1348349.png');
+  background-size: cover;
+  background-position: center;
+  filter: blur(1px);
+  opacity: 0.8;
+  z-index: -1;
+}
+/* -------- Layout Containers -------- */
+.wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+.container {
+  position: relative;
+}
+
+.issueSection {
+  padding: 2rem;
+}
+
+.issueList {
+  width: 100%;
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: var(--card-shadow);
+}
+
+/* -------- Titles & Text -------- */
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 1rem;
+}.title1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1rem;
+}
+.loading,
+.empty,
+.noComments,
+.noSubtasks {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* -------- Issue Grid in Vertical Flow -------- */
+.issueGrid {
+  display: flex;
+  flex-direction: column;  /* Columna única */
+  gap: 1rem;
+  padding: 1rem 0;
+}
+
+/* -------- Issue Cards -------- */
+.issueCard {
+  background: #fafafa;
+  border-left: 4px solid var(--primary);
+  padding: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 80%; /* Ocupa todo el ancho del contenedor */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.issueCard:hover {
+  background: #eef7ff;
+  transform: translateY(-2px);
+}
+
+.issueSummary {
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+}
+
+/* -------- Collapsible Groups -------- */
+.collapsibleGroup {
+  margin-bottom: 1.5rem;
+}
+
+.collapsibleToggle {
+  background: none;
+  border: none;
+  font-weight: bold;
+  font-size: 1.1rem;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0;
+}
+
+/* -------- Modal Overlay -------- */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+}
+
+/* -------- Modal Content -------- */
+.modalContent {
+  position: relative; /* ✅ Necesario para posicionar la ❌ correctamente */
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  width: 100%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--card-shadow);
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-self: center;
+}
+
+.modalHeader {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.5rem;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+.columnLeft,
+.columnRight {
+  flex: 1;
+  min-width: 300px;
+}
+
+.columnLeft p {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.columnLeft strong {
+  color: var(--primary);
+}
+.modalContent::-webkit-scrollbar {
+  width: 6px;
+}
+.modalContent::-webkit-scrollbar-thumb {
+  background-color: var(--primary);
+  border-radius: 6px;
+}
+
+/* -------- Descriptions -------- */
+.adfDescription {
+  background: #f7f7f7;
+  padding: 1rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #333;
+  white-space: pre-wrap;
+}
+
+.adfDescription a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+/* -------- Sections -------- */
+.sectionTitle {
+  font-size: 1.1rem;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+  font-weight: bold;
+}
+
+/* -------- Comments -------- */
+.commentsSection {
+  margin-top: 1rem;
+}
+
+.commentList {
+  list-style: none;
+  padding-left: 0;
+}
+.commentList li {
+  background: #f9f9f9;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid #ccc;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+}
+.commentList strong {
+  color: var(--primary);
+}
+.commentItem {
+  background: #f0f0f0;
+  border-left: 3px solid #ddd;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+}
+
+.commentAuthor {
+  font-weight: bold;
+  display: inline-block;
+}
+
+.commentDate {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+  font-style: italic;
+}
+
+.commentBody {
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+  white-space: pre-wrap;
+}
+
+/* -------- Subtareas -------- */
+.subtaskSection {
+  margin-top: 1rem;
+}
+.subtaskList li {
+  margin-bottom: 0.5rem;
+}
+.subtaskList {
+  list-style: none;
+  padding: 0;
+}
+
+.subtaskButton {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-weight: bold;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  text-align: left;
+  width: 100%;
+}
+
+.subtaskButton:hover {
+  text-decoration: underline;
+}
+
+/* -------- Buttons -------- */
+.closeButton {
+  background-color: var(--danger);
+  color: white;
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 1.5rem;
+  align-self: flex-end; /* lo empuja a la derecha si se permite */
+  width: fit-content;   /* solo lo necesario */
+  min-width: 120px;
+  transition: background 0.2s ease;
+}
+
+.closeButton:hover {
+  background-color: #d9363e;
+}
+
+
+/* -------- Responsive -------- */
+@media (max-width: 600px) {
+  .modalContent {
+    padding: 1rem;
+    max-width: 95%;
+  }
+
+  .issueList {
+    width: 100%;
+  }
+}
+.issueGridWrapper {
+  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.collapsibleGroup {
+  width: 100%;
+}
+
+.collapsibleToggle {
+  background: none;
+  border: none;
+  color: #ddd;
+  font-weight: bold;
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.25rem;
+  width: 100%;
+}
+
+.issueGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.issueCard {
+  background: rgba(255, 255, 255, 0.8); /* fondo semi-transparente para resaltar sobre blur */
+  border-left: 4px solid var(--primary);
+  padding: 1rem;
+  border-radius: 10px;
+  border-color: #1f1f1f;
+  color: #1f1f1f;
+  font-weight: bold;
+  backdrop-filter: blur(4px); /* Glassmorphism sutil */
+  box-shadow: 
+    0 2px 5px rgba(0, 0, 0, 0.1), 
+    0 4px 12px rgba(0, 0, 0, 0.15); /* profundidad doble */
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.issueCard:hover {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-6px);
+  box-shadow: 
+    0 6px 10px rgba(0, 0, 0, 0.15),
+    0 12px 24px rgba(0, 0, 0, 0.2); /* más sombra en hover */
+}
+
+.segmentedCard {
+  background-color: #b4d2ff; /* o el color que prefieras */
+  border: 2px solid rgb(0, 17, 255);
+}
+
+.tournamentCard {
+  background-color: #cef7c4;
+  border: 2px solid #19d2a4;
+}
+
+.promotionCard {
+  background-color: #f1f8e9;
+  border: 2px solid #8bc34a;
+}
+
+
+.attachmentsSection {
+  margin-top: 1rem;
+}
+
+.attachmentList {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.attachmentList li {
+  margin-bottom: 0.5rem;
+}
+
+.attachmentList a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.attachmentList a:hover {
+  text-decoration: underline;
+}
+
+.attachmentList a {
+  text-decoration: none;
+  color: #0366d6;
+}
+
+.attachmentList a:hover {
+  text-decoration: underline;
+}
+
+
+/* Área de comentarios scrollable */
+.commentsSection {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  margin-top: 1rem;
+  border-left: 3px solid #eee;
+  padding-left: 1rem;
+}
+
+/* Scroll estilizado solo para comentarios */
+.commentsSection::-webkit-scrollbar {
+  width: 6px;
+}
+.commentsSection::-webkit-scrollbar-thumb {
+  background-color: var(--primary);
+  border-radius: 6px;
+}
+
+.commentList {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.commentList li {
+  background: #f9f9f9;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid #ccc;
+  margin-bottom: 0.75rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #333;
+}
+.closeIcon {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.closeIcon:hover {
+  background: var(--danger);
+  color: white;
+}
+.changeStatusButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.subtaskItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+
+
+.subtaskButton:hover {
+  text-decoration: underline;
+}
+
+.statusSelect {
+  padding: 6px 10px;
+  font-size: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  color: #333;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.statusSelect:hover {
+  border-color: #888;
+}
+
+.statusSelect:focus {
+  border-color: #2684FF;
+  box-shadow: 0 0 0 2px rgba(38, 132, 255, 0.3);
+  outline: none;
+}
+
+.statusSelect option {
+  background: #fff;
+  color: #000;
+}
+.mentions {
+  min-height: 70px;
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+}
+
+
+.commentsSection {
+  margin-top: 20px;
+}
+
+.commentList {
+  list-style: none;
+  padding-left: 0;
+}
+
+.commentList li {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.commentAuthor {
+  font-weight: bold;
+  color: #333;
+}
+
+.commentDate {
+  font-size: 12px;
+  color: #888;
+  margin-left: 6px;
+}
+
+.commentBody {
+  margin-top: 6px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.commentInputWrapper {
+  margin-top: 20px;
+  padding: 12px;
+  background-color: #f1f1f1;
+  border-radius: 6px;
+}
+
+.commentButton {
+  margin-top: 10px;
+  background-color: #0052cc;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.commentButton:hover {
+  background-color: #003d99;
+}
+
+
+
+
+.commentList {
+  list-style: none;
+  padding: 0;
+  margin-top: 1rem;
+}
+
+.commentItem {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.commentAuthor {
+  color: #172b4d;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.commentDate {
+  color: #6b778c;
+  font-size: 12px;
+}
+
+.commentBody {
+  margin-top: 6px;
+}
+
+.commentInputWrapper {
+  margin-top: 20px;
+  background: #f3f3f3;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.commentButton {
+  margin-top: 10px;
+  background-color: #0052cc;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.commentButton:hover {
+  background-color: #0747a6;
+}
+
+.deleteCommentButton {
+  background: none;
+  border: none;
+  color: #d32f2f;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.deleteCommentButton:hover {
+  color: #b71c1c;
+}
+
+/* react-mentions suggestions */
+.suggestions__list {
+  border: 1px solid #ccc;
+  background-color: white;
+  z-index: 99;
+}
+
+.suggestions__item {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.suggestions__item--focused {
+  background-color: #e6f0ff;
+}
+.expandButton {
+  background-color: #b4d2ff; /* o el color que prefieras */
+  border: 2px solid rgb(0, 0, 0);
+  color: #0052cc;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 10px;
+  padding: 6px 12px;
+}
+
+.expandButton:hover {
+  text-decoration: underline;
+}
