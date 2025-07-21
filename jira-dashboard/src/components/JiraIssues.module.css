@@ -358,6 +358,28 @@ body::before {
 
 
 /* -------- Responsive -------- */
+@media (max-width: 768px) {
+  .wrapper {
+    padding: 1rem;
+  }
+
+  .issueSection {
+    padding: 1rem;
+  }
+
+  .issueList {
+    padding: 1rem;
+  }
+
+  .issueCard {
+    padding: 0.8rem 1rem;
+  }
+
+  .modalBody {
+    flex-direction: column;
+  }
+}
+
 @media (max-width: 600px) {
   .modalContent {
     padding: 1rem;
@@ -366,6 +388,14 @@ body::before {
 
   .issueList {
     width: 100%;
+  }
+
+  .title {
+    font-size: 1.3rem;
+  }
+
+  .issueSummary {
+    font-size: 1rem;
   }
 }
 .issueGridWrapper {
