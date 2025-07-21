@@ -388,13 +388,13 @@ export default function JiraIssues() {
                             onClick={() => openModal(issue)}
                             className={cardClass}
                           >
-                            <strong>
-                              {issue.key} <span title="T&C completados">🟢</span>
-                              {isSegmented && ' 📦'}
-                              {isTournament && ' 🏆'}
-                              {isPromotion && ' 🎁'}
-                            </strong>
-                            <p>{issue.fields.summary}</p>
+                            <div className={styles.issueSummary}>{issue.fields.summary}</div>
+                            <div className={styles.issueMeta}>
+                              <span className={styles.issueKey}>{issue.key}</span>
+                              <span className={styles.issueAssignee}>
+                                {issue.fields.assignee?.displayName || 'Sin asignar'}
+                              </span>
+                            </div>
                           </div>
                         );
                       })}
@@ -463,13 +463,13 @@ export default function JiraIssues() {
                       onClick={() => openModal(issue)}
                       className={cardClass}
                     >
-                      <strong>
-                        {issue.key} <span title="Faltan publicar T&C">🔴</span>
-                        {isSegmented && ' 📦'}
-                        {isTournament && ' 🏆'}
-                        {isPromotion && ' 🎁'}
-                      </strong>
-                      <p>{issue.fields.summary}</p>
+                      <div className={styles.issueSummary}>{issue.fields.summary}</div>
+                      <div className={styles.issueMeta}>
+                        <span className={styles.issueKey}>{issue.key}</span>
+                        <span className={styles.issueAssignee}>
+                          {issue.fields.assignee?.displayName || 'Sin asignar'}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
@@ -538,61 +538,9 @@ export default function JiraIssues() {
                         const isDone = subtask.fields.status.name.toLowerCase() === 'done';
 
                         return (
-                          <li key={subtask.key} className={styles.subtaskItem}>
-                            <button
-                              onClick={() => openSubtask(subtask.key)}
-                              className={styles.subtaskButton}
-                            >
-                              {subtask.fields.summary}
-                            </button>
-                            <span style={{ fontWeight: 'bold' }}>{subtask.fields.status.name}</span>
-                            
-                            {isTyc && (
-                              <Select
-                                value={{
-                                  label: displayMap[subtask.fields.status.name] || subtask.fields.status.name,
-                                  value: subtask.fields.status.name,
-                                }}
-                                options={statusOptions
-                                  .filter((status) => ['To Do', 'Done'].includes(status))
-                                  .map((status) => ({
-                                    label: `${status === 'Done' ? '🟢' : '🔴'} ${displayMap[status] || status}`,
-                                    value: status,
-                                  }))
-                                }
-
-                                onChange={async (selectedOption) => {
-                                  const newStatus = selectedOption?.value;
-                                  if (!newStatus || newStatus === subtask.fields.status.name) return;
-
-                                  try {
-                                    const res = await fetch(`/api/issue/${subtask.key}`, {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ newStatus }),
-                                    });
-
-                                    if (!res.ok) throw new Error();
-                                    alert(`✅ Estado actualizado a ${newStatus}`);
-                                    await openModal(selectedIssue);
-                                  } catch (err) {
-                                    alert('❌ No se pudo actualizar el estado');
-                                    console.error(err);
-                                  }
-                                }}
-                                styles={{
-                                  control: (base) => ({
-                                    ...base,
-                                    minWidth: 160,
-                                    borderRadius: 6,
-                                    fontSize: '14px',
-                                    padding: '1px 2px',
-                                  }),
-                                }}
-                                classNamePrefix="react-select"
-                              />
-                            )}
-
+                          <li key={subtask.key} className={styles.subtaskItem} onClick={() => openSubtask(subtask.key)}>
+                            <span>{subtask.fields.summary}</span>
+                            <strong>{subtask.fields.status.name}</strong>
                           </li>
                         );
                       })}
