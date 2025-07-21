@@ -302,18 +302,11 @@ body::before {
   justify-content: space-between;
   align-items: center;
   transition: background-color 0.2s ease;
+  gap: 0.75rem;
 }
 
 .subtaskItem:hover {
   background-color: #f1f3f5;
-}
-  align-items: center;
-  gap: 0.75rem;
-  transition: background-color 0.2s ease;
-}
-
-.subtaskItem:hover {
-  background-color: #f0f2f5;
 }
 .subtaskList {
   list-style: none;
