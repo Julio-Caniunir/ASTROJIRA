@@ -386,7 +386,7 @@ export default function JiraIssues() {
                           <div
                             key={issue.key}
                             onClick={() => openModal(issue)}
-                            className={styles.issueCard}
+                            className={cardClass}
                           >
                             <div className={styles.issueSummary}>{issue.fields.summary}</div>
                             <div className={styles.issueMeta}>
@@ -461,7 +461,7 @@ export default function JiraIssues() {
                     <div
                       key={issue.key}
                       onClick={() => openModal(issue)}
-                      className={styles.issueCard}
+                      className={cardClass}
                     >
                       <div className={styles.issueSummary}>{issue.fields.summary}</div>
                       <div className={styles.issueMeta}>
