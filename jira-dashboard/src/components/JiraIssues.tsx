@@ -388,13 +388,16 @@ export default function JiraIssues() {
                             onClick={() => openModal(issue)}
                             className={cardClass}
                           >
-                            <div className={styles.issueSummary}>{issue.fields.summary}</div>
-                            <div className={styles.issueMeta}>
-                              <span className={styles.issueKey}>{issue.key}</span>
-                              <span className={styles.issueAssignee}>
-                                {issue.fields.assignee?.displayName || 'Sin asignar'}
-                              </span>
-                            </div>
+                            <strong>
+                              {issue.key}
+                              <span style={{ color: 'green', marginLeft: '10px' }}>●</span>
+                            </strong>
+                            <p>
+                              {isPromotion && '🎁 '}
+                              {isSegmented && '📦 '}
+                              {isTournament && '🏆 '}
+                              {issue.fields.summary}
+                            </p>
                           </div>
                         );
                       })}
@@ -463,13 +466,16 @@ export default function JiraIssues() {
                       onClick={() => openModal(issue)}
                       className={cardClass}
                     >
-                      <div className={styles.issueSummary}>{issue.fields.summary}</div>
-                      <div className={styles.issueMeta}>
-                        <span className={styles.issueKey}>{issue.key}</span>
-                        <span className={styles.issueAssignee}>
-                          {issue.fields.assignee?.displayName || 'Sin asignar'}
-                        </span>
-                      </div>
+                      <strong>
+                        {issue.key}
+                        <span style={{ color: 'red', marginLeft: '10px' }}>●</span>
+                      </strong>
+                      <p>
+                        {isPromotion && '🎁 '}
+                        {isSegmented && '📦 '}
+                        {isTournament && '🏆 '}
+                        {issue.fields.summary}
+                      </p>
                     </div>
                   );
                 })}
