@@ -407,13 +407,13 @@ export default function JiraIssues() {
                             onClick={() => openModal(issue)}
                             className={cardClass}
                           >
-                            <strong>
-                              {issue.key} <span title="T&C completados">🟢</span>
-                              {isSegmented && ' 📦'}
-                              {isTournament && ' 🏆'}
-                              {isPromotion && ' 🎁'}
-                            </strong>
-                            <p>{issue.fields.summary}</p>
+                            <div className={styles.issueSummary}>{issue.fields.summary}</div>
+                            <div className={styles.issueMeta}>
+                              <span className={styles.issueKey}>{issue.key}</span>
+                              <span className={styles.issueAssignee}>
+                                {issue.fields.assignee ? issue.fields.assignee.displayName : 'Sin Asignar'}
+                              </span>
+                            </div>
                           </div>
                         );
                       })}
@@ -482,13 +482,13 @@ export default function JiraIssues() {
                       onClick={() => openModal(issue)}
                       className={cardClass}
                     >
-                      <strong>
-                        {issue.key} <span title="Faltan publicar T&C">🔴</span>
-                        {isSegmented && ' 📦'}
-                        {isTournament && ' 🏆'}
-                        {isPromotion && ' 🎁'}
-                      </strong>
-                      <p>{issue.fields.summary}</p>
+                      <div className={styles.issueSummary}>{issue.fields.summary}</div>
+                      <div className={styles.issueMeta}>
+                        <span className={styles.issueKey}>{issue.key}</span>
+                        <span className={styles.issueAssignee}>
+                          {issue.fields.assignee ? issue.fields.assignee.displayName : 'Sin Asignar'}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
@@ -518,38 +518,20 @@ export default function JiraIssues() {
             </div>
 
             <div className={styles.modalBody}>
-              {/* Columna izquierda */}
               <div className={styles.columnLeft}>
-                {selectedIssue.fields.duedate && (
-                  <p>📅 <strong>Fecha límite:</strong> {new Date(selectedIssue.fields.duedate).toLocaleDateString()}</p>
-                )}
-                {selectedIssue.fields.assignee?.displayName && (
-                  <p>👤 <strong>Responsable:</strong> {selectedIssue.fields.assignee.displayName}</p>
-                )}
-                {selectedIssue.fields.priority?.name && (
-                  <p>⚡ <strong>Prioridad:</strong> {selectedIssue.fields.priority.name}</p>
-                )}
-                {selectedIssue.fields.labels && selectedIssue.fields.labels.length > 0 && (
-                  <p>🏷️ <strong>Etiquetas:</strong> {selectedIssue.fields.labels.join(', ')}</p>
-                )}
-
-                {(selectedIssue.fields as any).attachment?.length > 0 && (
-                  <div className={styles.attachmentsSection}>
-                    <h4>📎 Archivos adjuntos:</h4>
-                    <ul className={styles.attachmentList}>
-                      {(selectedIssue.fields as any).attachment?.map((file: any) => (
-                        <li key={file.id}>
-                          <a href={file.content} target="_blank" rel="noopener noreferrer">
-                            📄 {file.filename} ({(file.size / 1024).toFixed(1)} KB)
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
+                <div className={styles.descriptionSection}>
+                  <h3>Descripción</h3>
+                  <div className={styles.adfDescription}>
+                    {selectedIssue.fields.description ? (
+                      renderADFToReact(selectedIssue.fields.description)
+                    ) : (
+                      <p className={styles.empty}>No hay descripción.</p>
+                    )}
                   </div>
-                )}
-                {selectedIssue.fields.subtasks?.length ? (
-                  <div className={styles.subtaskSection}>
-                    <h4>📋 Subtareas:</h4>
+                </div>
+                <div className={styles.subtasksSection}>
+                  <h3>Sub-tareas</h3>
+                  {selectedIssue.fields.subtasks?.length ? (
                     <ul className={styles.subtaskList}>
                       {selectedIssue.fields.subtasks.map((subtask) => {
                         const summary = subtask.fields.summary.toLowerCase();
@@ -558,19 +540,13 @@ export default function JiraIssues() {
 
                         return (
                           <li key={subtask.key} className={styles.subtaskItem}>
-                            {/* Icono de estado */}
                             <span>{isDone ? '🟢' : '🔴'}</span>
-
-                            {/* Botón estilo original */}
                             <button
                               onClick={() => openSubtask(subtask.key)}
                               className={styles.subtaskButton}
                             >
-                              <strong style={{ color: '#0033cc' }}>{subtask.key}</strong>: {subtask.fields.summary} —{' '}
-                              {!isTyc && <em>{subtask.fields.status.name}</em>}
+                              <strong>{subtask.key}</strong>: {subtask.fields.summary}
                             </button>
-
-                            {/* Dropdown solo si es TYC */}
                             {isTyc && (
                               <Select
                                 value={{
@@ -584,7 +560,6 @@ export default function JiraIssues() {
                                     value: status,
                                   }))
                                 }
-
                                 onChange={async (selectedOption) => {
                                   const newStatus = selectedOption?.value;
                                   if (!newStatus || newStatus === subtask.fields.status.name) return;
@@ -597,7 +572,6 @@ export default function JiraIssues() {
                                     });
 
                                     if (!res.ok) throw new Error();
-                                    alert(`✅ Estado actualizado a ${newStatus}`);
                                     await openModal(selectedIssue);
                                   } catch (err) {
                                     alert('❌ No se pudo actualizar el estado');
@@ -605,61 +579,37 @@ export default function JiraIssues() {
                                   }
                                 }}
                                 styles={{
-                                  control: (base) => ({
-                                    ...base,
-                                    minWidth: 160,
-                                    borderRadius: 6,
-                                    fontSize: '14px',
-                                    padding: '1px 2px',
-                                  }),
+                                  control: (base) => ({ ...base, minWidth: 160, borderRadius: 6, fontSize: '14px', padding: '1px 2px' }),
                                 }}
                                 classNamePrefix="react-select"
                               />
                             )}
-
                           </li>
                         );
                       })}
                     </ul>
-                  </div>
-                ) : (
-                  <p className={styles.noSubtasks}>No hay subtareas.</p>
-                )}
-
-
+                  ) : (
+                    <p className={styles.noSubtasks}>No hay subtareas.</p>
+                  )}
+                </div>
               </div>
-
-              {/* Columna derecha */}
               <div className={styles.columnRight}>
-                {selectedIssue.fields.description && (
-                  <div>
-                    <h4>📝 Descripción:</h4>
-                    <div className={styles.description}>
-                      {renderADFToReact(selectedIssue.fields.description)}
-                    </div>
-                  </div>
-                )}
-
-                {selectedIssue.comments?.length ? (
-                  <div className={styles.commentsSection}>
-                    <h4>💬 Comentarios:</h4>
-                    <ul className={styles.commentList}>
-                      {selectedIssue.comments.map((comment) => (
-                        <li key={comment.id}>
-                          <p>
-                            <strong>{comment.author}</strong>{' '}
-                            <em className={styles.commentDate}>
-                              ({new Date(comment.created).toLocaleString()})
-                            </em>
-                          </p>
-                          <div>{renderADFToReact(comment.body)}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : (
-                  <p className={styles.noComments}>💬 Sin comentarios.</p>
-                )}
+                <div className={styles.infoBlock}>
+                  <strong>Estado</strong>
+                  <p>{selectedIssue.fields.status.name}</p>
+                </div>
+                <div className={styles.infoBlock}>
+                  <strong>Asignado a</strong>
+                  <p>{selectedIssue.fields.assignee ? selectedIssue.fields.assignee.displayName : 'Sin asignar'}</p>
+                </div>
+                <div className={styles.infoBlock}>
+                  <strong>Vencimiento</strong>
+                  <p>{selectedIssue.fields.duedate ? new Date(selectedIssue.fields.duedate).toLocaleDateString() : 'No establecido'}</p>
+                </div>
+                <div className={styles.infoBlock}>
+                  <strong>Prioridad</strong>
+                  <p>{selectedIssue.fields.priority ? selectedIssue.fields.priority.name : 'No establecido'}</p>
+                </div>
               </div>
             </div>
           </div>
