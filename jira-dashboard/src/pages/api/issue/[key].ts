@@ -18,7 +18,7 @@ export const GET: APIRoute = async ({ params, url }) => {
   if (getTransitions === 'true') {
     const transitionsUrl = `https://${domain}/rest/api/3/issue/${issueKey}/transitions`;
 
-    try {
+    try { 
       const transitionsRes = await fetch(transitionsUrl, {
         headers: {
           Authorization: `Basic ${auth}`,
