@@ -88,14 +88,17 @@ body::before {
 
 /* -------- Issue Cards -------- */
 .issueCard {
-  background: #fafafa;
-  border-left: 4px solid var(--primary);
-  padding: 1rem;
-  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-left: 5px solid var(--primary);
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
   cursor: pointer;
-  width: 80%; /* Ocupa todo el ancho del contenedor */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease, background 0.2s ease;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.07);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .issueCard:hover {
@@ -104,8 +107,30 @@ body::before {
 }
 
 .issueSummary {
-  margin-top: 0.25rem;
-  font-size: 0.95rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 0.75rem;
+}
+
+.issueMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #5e6c84;
+  margin-top: auto;
+}
+
+.issueKey {
+  font-weight: 500;
+  background-color: #f0f2f5;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.issueAssignee {
+  font-style: italic;
 }
 
 /* -------- Collapsible Groups -------- */
@@ -265,8 +290,21 @@ body::before {
 .subtaskSection {
   margin-top: 1rem;
 }
-.subtaskList li {
-  margin-bottom: 0.5rem;
+.subtaskItem {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-left: 4px solid #5e6c84;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: background-color 0.2s ease;
+}
+
+.subtaskItem:hover {
+  background-color: #f0f2f5;
 }
 .subtaskList {
   list-style: none;
@@ -276,13 +314,13 @@ body::before {
 .subtaskButton {
   background: none;
   border: none;
-  color: var(--primary);
-  font-weight: bold;
+  color: var(--text-main);
+  font-weight: 500;
   font-size: 0.95rem;
   cursor: pointer;
-  padding: 0.25rem 0;
+  padding: 0;
   text-align: left;
-  width: 100%;
+  flex-grow: 1;
 }
 
 .subtaskButton:hover {

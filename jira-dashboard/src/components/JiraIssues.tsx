@@ -386,15 +386,15 @@ export default function JiraIssues() {
                           <div
                             key={issue.key}
                             onClick={() => openModal(issue)}
-                            className={cardClass}
+                            className={styles.issueCard}
                           >
-                            <strong>
-                              {issue.key} <span title="T&C completados">🟢</span>
-                              {isSegmented && ' 📦'}
-                              {isTournament && ' 🏆'}
-                              {isPromotion && ' 🎁'}
-                            </strong>
-                            <p>{issue.fields.summary}</p>
+                            <div className={styles.issueSummary}>{issue.fields.summary}</div>
+                            <div className={styles.issueMeta}>
+                              <span className={styles.issueKey}>{issue.key}</span>
+                              <span className={styles.issueAssignee}>
+                                {issue.fields.assignee ? issue.fields.assignee.displayName : 'Unassigned'}
+                              </span>
+                            </div>
                           </div>
                         );
                       })}
@@ -461,15 +461,15 @@ export default function JiraIssues() {
                     <div
                       key={issue.key}
                       onClick={() => openModal(issue)}
-                      className={cardClass}
+                      className={styles.issueCard}
                     >
-                      <strong>
-                        {issue.key} <span title="Faltan publicar T&C">🔴</span>
-                        {isSegmented && ' 📦'}
-                        {isTournament && ' 🏆'}
-                        {isPromotion && ' 🎁'}
-                      </strong>
-                      <p>{issue.fields.summary}</p>
+                      <div className={styles.issueSummary}>{issue.fields.summary}</div>
+                      <div className={styles.issueMeta}>
+                        <span className={styles.issueKey}>{issue.key}</span>
+                        <span className={styles.issueAssignee}>
+                          {issue.fields.assignee ? issue.fields.assignee.displayName : 'Unassigned'}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
@@ -539,19 +539,14 @@ export default function JiraIssues() {
 
                         return (
                           <li key={subtask.key} className={styles.subtaskItem}>
-                            {/* Icono de estado */}
-                            <span>{isDone ? '🟢' : '🔴'}</span>
-
-                            {/* Botón estilo original */}
                             <button
                               onClick={() => openSubtask(subtask.key)}
                               className={styles.subtaskButton}
                             >
-                              <strong style={{ color: '#0033cc' }}>{subtask.key}</strong>: {subtask.fields.summary} —{' '}
-                              {!isTyc && <em>{subtask.fields.status.name}</em>}
+                              {subtask.fields.summary}
                             </button>
-
-                            {/* Dropdown solo si es TYC */}
+                            <span style={{ fontWeight: 'bold' }}>{subtask.fields.status.name}</span>
+                            
                             {isTyc && (
                               <Select
                                 value={{
