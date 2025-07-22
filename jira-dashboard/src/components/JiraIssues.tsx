@@ -565,6 +565,16 @@ export default function JiraIssues() {
                         const summary = subtask.fields.summary.toLowerCase();
                         const showDropdown = summary.includes('publicación de banners y t&c') || summary.includes('publicación de landing y t&c');
 
+                        const statusDisplayMap: { [key: string]: string } = {
+                          'To Do': 'Por Hacer',
+                          'Done': 'Hecho',
+                        };
+                        const simplifiedOptions = [
+                          { value: 'To Do', label: 'Por Hacer' },
+                          { value: 'Done', label: 'Hecho' },
+                        ];
+                        const currentDisplayStatus = statusDisplayMap[currentStatus] || currentStatus;
+
                         return (
                           <li key={subtask.key} className={styles.subtaskItem}>
                             <span onClick={() => openSubtask(subtask.key)} style={{ cursor: 'pointer', flexGrow: 1 }}>
@@ -573,13 +583,13 @@ export default function JiraIssues() {
                             {showDropdown ? (
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} onClick={(e) => e.stopPropagation()}>
                                 <Select
-                                  value={{ label: currentStatus, value: currentStatus }}
+                                  value={{ label: currentDisplayStatus, value: currentStatus }}
                                   onChange={(selectedOption) => {
                                     if (selectedOption) {
                                       setSubtaskStatuses(prev => ({ ...prev, [subtask.key]: selectedOption.value }));
                                     }
                                   }}
-                                  options={availableTransitions.map(status => ({ label: status, value: status }))}
+                                  options={simplifiedOptions}
                                   className={styles.statusSelect}
                                   styles={{ container: (base) => ({ ...base, width: '150px' }) }}
                                   isSearchable={false}
