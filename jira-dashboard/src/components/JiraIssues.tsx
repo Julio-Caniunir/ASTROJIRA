@@ -575,6 +575,11 @@ export default function JiraIssues() {
                         ];
                         const currentDisplayStatus = statusDisplayMap[currentStatus] || currentStatus;
 
+                        const StatusIndicator = ({ status }: { status: string }) => {
+                          const color = status === 'Done' ? 'green' : 'red';
+                          return <span style={{ color, marginRight: '8px' }}>●</span>;
+                        };
+
                         return (
                           <li key={subtask.key} className={styles.subtaskItem}>
                             <span onClick={() => openSubtask(subtask.key)} style={{ cursor: 'pointer', flexGrow: 1 }}>
@@ -582,43 +587,40 @@ export default function JiraIssues() {
                             </span>
                             {showDropdown ? (
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} onClick={(e) => e.stopPropagation()}>
+                                <StatusIndicator status={currentStatus} />
                                 <Select
                                   value={{ label: currentDisplayStatus, value: currentStatus }}
-                                  onChange={(selectedOption) => {
-                                    if (selectedOption) {
-                                      setSubtaskStatuses(prev => ({ ...prev, [subtask.key]: selectedOption.value }));
+                                  onChange={async (selectedOption) => {
+                                    if (selectedOption && selectedIssue) {
+                                      const newStatus = selectedOption.value;
+                                      setSubtaskStatuses(prev => ({ ...prev, [subtask.key]: newStatus }));
+                                      setIsUpdating(true);
+                                      try {
+                                        const res = await fetch(`/api/issue/${subtask.key}`,
+                                          {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ newStatus }),
+                                          });
+                                        if (!res.ok) throw new Error('Error al cambiar estado');
+                                        // No mostramos alerta para una experiencia más fluida
+                                        await openModal(selectedIssue); // Recargamos para confirmar
+                                      } catch (error) {
+                                        console.error('Error al actualizar estado:', error);
+                                        alert('No se pudo actualizar el estado');
+                                        // Revertir el estado en la UI si falla
+                                        setSubtaskStatuses(prev => ({ ...prev, [subtask.key]: currentStatus }));
+                                      } finally {
+                                        setIsUpdating(false);
+                                      }
                                     }
                                   }}
                                   options={simplifiedOptions}
                                   className={styles.statusSelect}
                                   styles={{ container: (base) => ({ ...base, width: '150px' }) }}
                                   isSearchable={false}
+                                  isDisabled={isUpdating}
                                 />
-                                <button
-                                  className={styles.changeStatusButton}
-                                  disabled={isUpdating || currentStatus === subtask.fields.status.name}
-                                  onClick={async () => {
-                                    if (!selectedIssue) return;
-                                    setIsUpdating(true);
-                                    try {
-                                      const res = await fetch(`/api/issue/${subtask.key}`, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({ newStatus: currentStatus }),
-                                      });
-                                      if (!res.ok) throw new Error('Error al cambiar estado');
-                                      alert('Estado actualizado');
-                                      await openModal(selectedIssue);
-                                    } catch (error) {
-                                      console.error('Error al actualizar estado:', error);
-                                      alert('No se pudo actualizar el estado');
-                                    } finally {
-                                      setIsUpdating(false);
-                                    }
-                                  }}
-                                >
-                                  Cambiar
-                                </button>
                               </div>
                             ) : (
                               <strong>{subtask.fields.status.name}</strong>
