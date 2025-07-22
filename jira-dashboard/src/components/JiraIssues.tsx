@@ -608,15 +608,13 @@ export default function JiraIssues() {
             )}
             <div className={styles.statusControl}>
               <label><strong>🟢 Estado:</strong></label>
-              <select
-                value={subtaskStatus}
-                onChange={(e) => setSubtaskStatus(e.target.value)}
+              <Select
+                value={{ label: subtaskStatus, value: subtaskStatus }}
+                onChange={(selectedOption) => setSubtaskStatus(selectedOption ? selectedOption.value : '')}
+                options={statusOptions.map(status => ({ label: status, value: status }))}
                 className={styles.statusSelect}
-              >
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
-              </select>
+                isSearchable={false}
+              />
 
               <button
                 disabled={
