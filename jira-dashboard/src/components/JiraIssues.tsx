@@ -562,50 +562,57 @@ export default function JiraIssues() {
                         const currentStatus = subtaskStatuses[subtask.key] || subtask.fields.status.name;
                         const availableTransitions = subtaskTransitions[subtask.key] || [];
 
+                        const summary = subtask.fields.summary.toLowerCase();
+                        const showDropdown = summary.includes('publicación de banners y t&c') || summary.includes('publicación de landing y t&c');
+
                         return (
                           <li key={subtask.key} className={styles.subtaskItem}>
                             <span onClick={() => openSubtask(subtask.key)} style={{ cursor: 'pointer', flexGrow: 1 }}>
                               {subtask.fields.summary}
                             </span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} onClick={(e) => e.stopPropagation()}>
-                              <Select
-                                value={{ label: currentStatus, value: currentStatus }}
-                                onChange={(selectedOption) => {
-                                  if (selectedOption) {
-                                    setSubtaskStatuses(prev => ({ ...prev, [subtask.key]: selectedOption.value }));
-                                  }
-                                }}
-                                options={availableTransitions.map(status => ({ label: status, value: status }))}
-                                className={styles.statusSelect}
-                                styles={{ container: (base) => ({ ...base, width: '150px' }) }}
-                                isSearchable={false}
-                              />
-                              <button
-                                className={styles.changeStatusButton}
-                                disabled={isUpdating || currentStatus === subtask.fields.status.name}
-                                onClick={async () => {
-                                  if (!selectedIssue) return;
-                                  setIsUpdating(true);
-                                  try {
-                                    const res = await fetch(`/api/issue/${subtask.key}`, {
-                                      method: 'POST',
-                                      headers: { 'Content-Type': 'application/json' },
-                                      body: JSON.stringify({ newStatus: currentStatus }),
-                                    });
-                                    if (!res.ok) throw new Error('Error al cambiar estado');
-                                    alert('Estado actualizado');
-                                    await openModal(selectedIssue);
-                                  } catch (error) {
-                                    console.error('Error al actualizar estado:', error);
-                                    alert('No se pudo actualizar el estado');
-                                  } finally {
-                                    setIsUpdating(false);
-                                  }
-                                }}
-                              >
-                                Cambiar
-                              </button>
-                            </div>
+                            {showDropdown ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} onClick={(e) => e.stopPropagation()}>
+                                <Select
+                                  value={{ label: currentStatus, value: currentStatus }}
+                                  onChange={(selectedOption) => {
+                                    if (selectedOption) {
+                                      setSubtaskStatuses(prev => ({ ...prev, [subtask.key]: selectedOption.value }));
+                                    }
+                                  }}
+                                  options={availableTransitions.map(status => ({ label: status, value: status }))}
+                                  className={styles.statusSelect}
+                                  styles={{ container: (base) => ({ ...base, width: '150px' }) }}
+                                  isSearchable={false}
+                                />
+                                <button
+                                  className={styles.changeStatusButton}
+                                  disabled={isUpdating || currentStatus === subtask.fields.status.name}
+                                  onClick={async () => {
+                                    if (!selectedIssue) return;
+                                    setIsUpdating(true);
+                                    try {
+                                      const res = await fetch(`/api/issue/${subtask.key}`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ newStatus: currentStatus }),
+                                      });
+                                      if (!res.ok) throw new Error('Error al cambiar estado');
+                                      alert('Estado actualizado');
+                                      await openModal(selectedIssue);
+                                    } catch (error) {
+                                      console.error('Error al actualizar estado:', error);
+                                      alert('No se pudo actualizar el estado');
+                                    } finally {
+                                      setIsUpdating(false);
+                                    }
+                                  }}
+                                >
+                                  Cambiar
+                                </button>
+                              </div>
+                            ) : (
+                              <strong>{subtask.fields.status.name}</strong>
+                            )}
                           </li>
                         );
                       })}
