@@ -619,7 +619,11 @@ export default function JiraIssues() {
                                   options={simplifiedOptions}
                                   formatOptionLabel={formatOptionLabel}
                                   className={styles.statusSelect}
-                                  styles={{ container: (base) => ({ ...base, width: '150px' }) }}
+                                  styles={{
+                                    container: (base) => ({ ...base, width: '160px' }),
+                                    option: (base) => ({ ...base, fontSize: '15px' }),
+                                    singleValue: (base) => ({ ...base, fontSize: '15px' }),
+                                  }}
                                   isSearchable={false}
                                   isDisabled={isUpdating}
                                 />
