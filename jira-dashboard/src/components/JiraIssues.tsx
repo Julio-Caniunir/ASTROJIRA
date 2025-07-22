@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Select from 'react-select';
 import { MentionsInput, Mention } from 'react-mentions';
 import mentionStyles from '../types/mentionStyles.module.css';
@@ -181,40 +181,289 @@ export default function JiraIssues() {
   const [subtaskTransitions, setSubtaskTransitions] = useState<Record<string, string[]>>({});
   const [mentionText, setMentionText] = useState('');
   const [mentionUsers, setMentionUsers] = useState<{ id: string; display: string }[]>([]);
-  const [isUpdating, setIsUpdating] = useState(false); // Agrega esto dentro de tu componente JiraIssues
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [previousRedIssueKeys, setPreviousRedIssueKeys] = useState<Set<string>>(new Set());
   const displayMap: Record<string, string> = {
     'To Do': 'Por hacer',
     'Done': 'Hecho',
   };
 
   const [statusOptions, setStatusOptions] = useState<string[]>([]);
-  const greenIssues = issues
-    .filter(issue =>
-      issue.fields.subtasks?.some(sub => {
-        const summary = sub.fields.summary.toLowerCase();
-        const status = sub.fields.status.name.toLowerCase();
-        return (
-          status === 'done' &&
-          (
-            summary.includes('publicación de banners y t&c') ||
-            summary.includes('publicación de landing y t&c')
-          )
-        );
-      })
-    )
-    .sort((a, b) => {
-      const numA = parseInt(a.key.match(/\d+/)?.[0] || '0', 10);
-      const numB = parseInt(b.key.match(/\d+/)?.[0] || '0', 10);
-      return numA - numB;
-    });
+  
+  // Memoizar greenIssues para evitar recálculos innecesarios
+  const greenIssues = useMemo(() => {
+    return issues
+      .filter(issue =>
+        issue.fields.subtasks?.some(sub => {
+          const summary = sub.fields.summary.toLowerCase();
+          const status = sub.fields.status.name.toLowerCase();
+          return (
+            status === 'done' &&
+            (
+              summary.includes('publicación de banners y t&c') ||
+              summary.includes('publicación de landing y t&c')
+            )
+          );
+        })
+      )
+      .sort((a, b) => {
+        const numA = parseInt(a.key.match(/\d+/)?.[0] || '0', 10);
+        const numB = parseInt(b.key.match(/\d+/)?.[0] || '0', 10);
+        return numA - numB;
+      });
+  }, [issues]);
 
-  const redIssues = issues
-    .filter(issue => !greenIssues.includes(issue))
-    .sort((a, b) => {
-      const numA = parseInt(a.key.match(/\d+/)?.[0] || '0', 10);
-      const numB = parseInt(b.key.match(/\d+/)?.[0] || '0', 10);
-      return numA - numB;
-    });
+  // Memoizar redIssues para evitar recálculos innecesarios
+  const redIssues = useMemo(() => {
+    return issues
+      .filter(issue => !greenIssues.includes(issue))
+      .sort((a, b) => {
+        const numA = parseInt(a.key.match(/\d+/)?.[0] || '0', 10);
+        const numB = parseInt(b.key.match(/\d+/)?.[0] || '0', 10);
+        return numA - numB;
+      });
+  }, [issues, greenIssues]);
+
+  // Función para reproducir sonido de notificación estilo Zelda: Song of Storms COMPLETA (~30 segundos)
+  const playNotificationSound = () => {
+    try {
+      // Crear un contexto de audio
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Crear oscilador con envolvente más natural y menos robótica
+      const createOcarinaNote = (frequency: number, startTime: number, duration: number, volume: number, vibrato: boolean = false, harmonics: boolean = false) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        const filterNode = audioContext.createBiquadFilter();
+        
+        // Conectar: oscilador -> filtro -> ganancia -> destino
+        oscillator.connect(filterNode);
+        filterNode.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Configurar filtro para sonido más cálido y menos robótico
+        filterNode.type = 'lowpass';
+        filterNode.frequency.setValueAtTime(frequency * 3, audioContext.currentTime + startTime);
+        filterNode.Q.setValueAtTime(1.2, audioContext.currentTime + startTime);
+        
+        // Usar forma de onda más cálida (triangle + sine)
+        oscillator.type = 'triangle';
+        
+        // Frecuencia base con ligero vibrato para sonido más natural
+        if (vibrato) {
+          const lfo = audioContext.createOscillator();
+          const lfoGain = audioContext.createGain();
+          lfo.connect(lfoGain);
+          lfoGain.connect(oscillator.frequency);
+          
+          lfo.frequency.setValueAtTime(4.8, audioContext.currentTime + startTime); // Vibrato de 4.8Hz
+          lfoGain.gain.setValueAtTime(frequency * 0.012, audioContext.currentTime + startTime); // Vibrato sutil
+          lfo.type = 'sine';
+          
+          lfo.start(audioContext.currentTime + startTime);
+          lfo.stop(audioContext.currentTime + startTime + duration);
+        }
+        
+        oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + startTime);
+        
+        // Envolvente más natural como una ocarina real
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime + startTime);
+        gainNode.gain.linearRampToValueAtTime(volume * 0.3, audioContext.currentTime + startTime + 0.02); // Ataque rápido
+        gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + startTime + 0.08); // Subida suave
+        gainNode.gain.setValueAtTime(volume * 0.9, audioContext.currentTime + startTime + duration * 0.7); // Sostener
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + startTime + duration); // Release natural
+        
+        // Reproducir
+        oscillator.start(audioContext.currentTime + startTime);
+        oscillator.stop(audioContext.currentTime + startTime + duration);
+        
+        // Agregar armónicos si se especifica
+        if (harmonics) {
+          // Quinta perfecta (armónico natural)
+          const harmonic1 = audioContext.createOscillator();
+          const harmonic1Gain = audioContext.createGain();
+          harmonic1.connect(harmonic1Gain);
+          harmonic1Gain.connect(audioContext.destination);
+          harmonic1.type = 'sine';
+          harmonic1.frequency.setValueAtTime(frequency * 1.5, audioContext.currentTime + startTime);
+          harmonic1Gain.gain.setValueAtTime(0, audioContext.currentTime + startTime);
+          harmonic1Gain.gain.linearRampToValueAtTime(volume * 0.15, audioContext.currentTime + startTime + 0.1);
+          harmonic1Gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + startTime + duration);
+          harmonic1.start(audioContext.currentTime + startTime);
+          harmonic1.stop(audioContext.currentTime + startTime + duration);
+          
+          // Octava inferior (profundidad)
+          const harmonic2 = audioContext.createOscillator();
+          const harmonic2Gain = audioContext.createGain();
+          harmonic2.connect(harmonic2Gain);
+          harmonic2Gain.connect(audioContext.destination);
+          harmonic2.type = 'triangle';
+          harmonic2.frequency.setValueAtTime(frequency * 0.5, audioContext.currentTime + startTime);
+          harmonic2Gain.gain.setValueAtTime(0, audioContext.currentTime + startTime);
+          harmonic2Gain.gain.linearRampToValueAtTime(volume * 0.1, audioContext.currentTime + startTime + 0.05);
+          harmonic2Gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + startTime + duration);
+          harmonic2.start(audioContext.currentTime + startTime);
+          harmonic2.stop(audioContext.currentTime + startTime + duration);
+        }
+        
+        return { oscillator, gainNode, filterNode };
+      };
+      
+      // 🌩️ Song of Storms COMPLETA - Melodía original completa del juego (~30 segundos)
+       const createFullSongOfStorms = () => {
+         // Secuencia completa original con velocidad natural del juego: D F D. D F D. E F E F E C A. A D F G A. A D F G E. D F D. D F D. E F E F E C A. A D F G A. A D.
+         const completeMelody = [
+           // PRIMERA PARTE: D F D. D F D.
+           { freq: 587.33, duration: 0.5, volume: 0.28, vibrato: false, harmonics: false }, // D5
+           { freq: 698.46, duration: 0.5, volume: 0.26, vibrato: false, harmonics: false }, // F5
+           { freq: 1174.66, duration: 0.8, volume: 0.32, vibrato: true, harmonics: true },  // D6 (octava alta)
+           { freq: 587.33, duration: 0.5, volume: 0.28, vibrato: false, harmonics: false }, // D5
+           { freq: 698.46, duration: 0.5, volume: 0.26, vibrato: false, harmonics: false }, // F5
+           { freq: 1174.66, duration: 0.8, volume: 0.32, vibrato: true, harmonics: true },  // D6 (octava alta)
+           
+           // SEGUNDA PARTE: E F E F E C A.
+           { freq: 1318.51, duration: 0.3, volume: 0.24, vibrato: false, harmonics: false }, // E6
+           { freq: 1396.91, duration: 0.3, volume: 0.26, vibrato: false, harmonics: false }, // F6
+           { freq: 1318.51, duration: 0.3, volume: 0.24, vibrato: false, harmonics: false }, // E6
+           { freq: 1396.91, duration: 0.3, volume: 0.26, vibrato: false, harmonics: false }, // F6
+           { freq: 1318.51, duration: 0.3, volume: 0.24, vibrato: false, harmonics: false }, // E6
+           { freq: 1046.50, duration: 0.4, volume: 0.22, vibrato: false, harmonics: false }, // C6
+           { freq: 880.00, duration: 0.8, volume: 0.30, vibrato: true, harmonics: true },   // A5
+           
+           // TERCERA PARTE: A D F G A.
+           { freq: 880.00, duration: 0.4, volume: 0.28, vibrato: false, harmonics: false },  // A5
+           { freq: 587.33, duration: 0.4, volume: 0.26, vibrato: false, harmonics: false }, // D5
+           { freq: 698.46, duration: 0.4, volume: 0.24, vibrato: false, harmonics: false }, // F5
+           { freq: 783.99, duration: 0.4, volume: 0.25, vibrato: false, harmonics: false }, // G5
+           { freq: 880.00, duration: 0.6, volume: 0.30, vibrato: true, harmonics: true },   // A5
+           
+           // CUARTA PARTE: A D F G E.
+           { freq: 880.00, duration: 0.4, volume: 0.28, vibrato: false, harmonics: false },  // A5
+           { freq: 587.33, duration: 0.4, volume: 0.26, vibrato: false, harmonics: false }, // D5
+           { freq: 698.46, duration: 0.4, volume: 0.24, vibrato: false, harmonics: false }, // F5
+           { freq: 783.99, duration: 0.4, volume: 0.25, vibrato: false, harmonics: false }, // G5
+           { freq: 659.25, duration: 0.6, volume: 0.27, vibrato: true, harmonics: true },   // E5
+           
+           // QUINTA PARTE (repetición): D F D. D F D.
+           { freq: 587.33, duration: 0.5, volume: 0.28, vibrato: false, harmonics: false }, // D5
+           { freq: 698.46, duration: 0.5, volume: 0.26, vibrato: false, harmonics: false }, // F5
+           { freq: 1174.66, duration: 0.8, volume: 0.32, vibrato: true, harmonics: true },  // D6 (octava alta)
+           { freq: 587.33, duration: 0.5, volume: 0.28, vibrato: false, harmonics: false }, // D5
+           { freq: 698.46, duration: 0.5, volume: 0.26, vibrato: false, harmonics: false }, // F5
+           { freq: 1174.66, duration: 0.8, volume: 0.32, vibrato: true, harmonics: true },  // D6 (octava alta)
+           
+           // SEXTA PARTE (repetición): E F E F E C A.
+           { freq: 1318.51, duration: 0.3, volume: 0.24, vibrato: false, harmonics: false }, // E6
+           { freq: 1396.91, duration: 0.3, volume: 0.26, vibrato: false, harmonics: false }, // F6
+           { freq: 1318.51, duration: 0.3, volume: 0.24, vibrato: false, harmonics: false }, // E6
+           { freq: 1396.91, duration: 0.3, volume: 0.26, vibrato: false, harmonics: false }, // F6
+           { freq: 1318.51, duration: 0.3, volume: 0.24, vibrato: false, harmonics: false }, // E6
+           { freq: 1046.50, duration: 0.4, volume: 0.22, vibrato: false, harmonics: false }, // C6
+           { freq: 880.00, duration: 0.8, volume: 0.30, vibrato: true, harmonics: true },   // A5
+           
+           // SÉPTIMA PARTE (repetición): A D F G A.
+           { freq: 880.00, duration: 0.4, volume: 0.28, vibrato: false, harmonics: false },  // A5
+           { freq: 587.33, duration: 0.4, volume: 0.26, vibrato: false, harmonics: false }, // D5
+           { freq: 698.46, duration: 0.4, volume: 0.24, vibrato: false, harmonics: false }, // F5
+           { freq: 783.99, duration: 0.4, volume: 0.25, vibrato: false, harmonics: false }, // G5
+           { freq: 880.00, duration: 0.6, volume: 0.30, vibrato: true, harmonics: true },   // A5
+           
+           // FINAL: A D. (nota final larga)
+           { freq: 880.00, duration: 0.5, volume: 0.28, vibrato: false, harmonics: false },  // A5
+           { freq: 587.33, duration: 1.5, volume: 0.32, vibrato: true, harmonics: true },   // D5 (final largo)
+         ];
+        
+        let currentTime = 0;
+         const pauseBetweenNotes = 0.1; // Pausa natural entre notas como en el juego original
+         
+         // 🎵 REPRODUCIR SOLO LA MELODÍA COMPLETA ORIGINAL (una sola vez)
+         completeMelody.forEach((note, index) => {
+           createOcarinaNote(note.freq, currentTime, note.duration, note.volume, note.vibrato, note.harmonics);
+           currentTime += note.duration + pauseBetweenNotes;
+         });
+      };
+      
+      // 🌪️ Efectos de tormenta mejorados y extendidos
+      const createExtendedStormEffect = () => {
+        // Viento constante de fondo
+        const createWindLayer = (startTime: number, duration: number, intensity: number) => {
+          const bufferSize = audioContext.sampleRate * 0.2;
+          const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+          const data = buffer.getChannelData(0);
+          
+          // Ruido rosa filtrado para simular viento
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * intensity;
+          }
+          
+          const windSource = audioContext.createBufferSource();
+          const windGain = audioContext.createGain();
+          const windFilter = audioContext.createBiquadFilter();
+          
+          windSource.buffer = buffer;
+          windSource.loop = true;
+          windSource.connect(windFilter);
+          windFilter.connect(windGain);
+          windGain.connect(audioContext.destination);
+          
+          windFilter.type = 'bandpass';
+          windFilter.frequency.setValueAtTime(800 + Math.random() * 400, audioContext.currentTime + startTime);
+          windFilter.Q.setValueAtTime(0.5, audioContext.currentTime + startTime);
+          
+          windGain.gain.setValueAtTime(0, audioContext.currentTime + startTime);
+          windGain.gain.linearRampToValueAtTime(intensity * 0.3, audioContext.currentTime + startTime + 1);
+          windGain.gain.setValueAtTime(intensity * 0.3, audioContext.currentTime + startTime + duration - 2);
+          windGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + startTime + duration);
+          
+          windSource.start(audioContext.currentTime + startTime);
+          windSource.stop(audioContext.currentTime + startTime + duration);
+        };
+        
+        // Truenos ocasionales
+        const createThunder = (startTime: number) => {
+          const thunderOsc = audioContext.createOscillator();
+          const thunderGain = audioContext.createGain();
+          const thunderFilter = audioContext.createBiquadFilter();
+          
+          thunderOsc.connect(thunderFilter);
+          thunderFilter.connect(thunderGain);
+          thunderGain.connect(audioContext.destination);
+          
+          thunderOsc.type = 'sawtooth';
+          thunderOsc.frequency.setValueAtTime(60, audioContext.currentTime + startTime);
+          thunderOsc.frequency.exponentialRampToValueAtTime(20, audioContext.currentTime + startTime + 0.8);
+          
+          thunderFilter.type = 'lowpass';
+          thunderFilter.frequency.setValueAtTime(200, audioContext.currentTime + startTime);
+          
+          thunderGain.gain.setValueAtTime(0, audioContext.currentTime + startTime);
+          thunderGain.gain.linearRampToValueAtTime(0.15, audioContext.currentTime + startTime + 0.05);
+          thunderGain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + startTime + 0.8);
+          
+          thunderOsc.start(audioContext.currentTime + startTime);
+          thunderOsc.stop(audioContext.currentTime + startTime + 0.8);
+        };
+        
+        // Crear capas de viento con diferentes intensidades
+        createWindLayer(0, 30, 0.02);   // Viento suave constante
+        createWindLayer(5, 20, 0.04);   // Viento medio
+        createWindLayer(15, 15, 0.03);  // Viento variable
+        
+        // Truenos en momentos específicos
+        createThunder(8);   // Primer trueno
+        createThunder(16);  // Segundo trueno
+        createThunder(25);  // Trueno final
+      };
+      
+      // 🎼 Ejecutar la composición completa
+      createFullSongOfStorms();
+      createExtendedStormEffect();
+      
+      console.log('🌩️⚡ Nueva tarjeta detectada - Song of Storms COMPLETA reproducida con velocidad natural (~15 segundos)');
+    } catch (error) {
+      console.error('Error al reproducir sonido de notificación:', error);
+    }
+  };
     const onDragEnd = async (result: DropResult) => {
       const { source, destination, draggableId } = result;
     
@@ -272,7 +521,26 @@ export default function JiraIssues() {
     };
   }, []);
 
-  // 🔽 Nuevo efecto: obtener usuarios mencionables cuando cambia la subtarea seleccionada
+  // Efecto para detectar nuevas tarjetas en la sección roja y reproducir sonido
+  useEffect(() => {
+    if (loading) return; // No verificar durante la carga inicial
+    
+    const currentRedIssueKeys = new Set(redIssues.map(issue => issue.key));
+    
+    // Detectar nuevas tarjetas (que están en currentRedIssueKeys pero no en previousRedIssueKeys)
+    const newRedIssues = [...currentRedIssueKeys].filter(key => !previousRedIssueKeys.has(key));
+    
+    if (newRedIssues.length > 0 && previousRedIssueKeys.size > 0) {
+      // Solo reproducir sonido si no es la primera carga (previousRedIssueKeys.size > 0)
+      console.log(`🚨 ${newRedIssues.length} nueva(s) tarjeta(s) detectada(s) en "FALTA PUBLICAR & SUBIR T&C":`, newRedIssues);
+      playNotificationSound();
+    }
+    
+    // Actualizar el estado anterior
+    setPreviousRedIssueKeys(currentRedIssueKeys);
+  }, [redIssues, loading]); // Removido previousRedIssueKeys de las dependencias para evitar bucle infinito
+
+  // Efecto: obtener usuarios mencionables cuando cambia la subtarea seleccionada
   useEffect(() => {
     if (!selectedSubtask) return;
 
