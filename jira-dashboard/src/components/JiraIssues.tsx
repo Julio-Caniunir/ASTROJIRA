@@ -177,6 +177,8 @@ export default function JiraIssues() {
 
   const [showRedIssues, setShowRedIssues] = useState(true);
   const [subtaskStatus, setSubtaskStatus] = useState('');
+  const [subtaskStatuses, setSubtaskStatuses] = useState<Record<string, string>>({});
+  const [subtaskTransitions, setSubtaskTransitions] = useState<Record<string, string[]>>({});
   const [mentionText, setMentionText] = useState('');
   const [mentionUsers, setMentionUsers] = useState<{ id: string; display: string }[]>([]);
   const [isUpdating, setIsUpdating] = useState(false); // Agrega esto dentro de tu componente JiraIssues
@@ -298,6 +300,24 @@ export default function JiraIssues() {
       setStatusOptions(transitions);
       setSelectedIssue(data);
       setSelectedSubtask(null);
+
+      if (data.fields.subtasks?.length) {
+        const initialStatuses = data.fields.subtasks.reduce((acc: Record<string, string>, sub: SubtaskSummary) => {
+          acc[sub.key] = sub.fields.status.name;
+          return acc;
+        }, {});
+        setSubtaskStatuses(initialStatuses);
+
+        const transitionPromises = data.fields.subtasks.map((sub: SubtaskSummary) =>
+          fetch(`/api/issue/${sub.key}?transitions=true`).then(res => res.json())
+        );
+        const transitionsPerSubtask = await Promise.all(transitionPromises);
+        const transitionsMap = data.fields.subtasks.reduce((acc: Record<string, string[]>, sub: SubtaskSummary, index: number) => {
+          acc[sub.key] = transitionsPerSubtask[index] || [];
+          return acc;
+        }, {});
+        setSubtaskTransitions(transitionsMap);
+      }
     } catch (err) {
       console.error('Error al cargar detalles del issue:', err);
     }
@@ -539,14 +559,53 @@ export default function JiraIssues() {
                     <h4>📋 Subtareas:</h4>
                     <ul className={styles.subtaskList}>
                       {selectedIssue.fields.subtasks.map((subtask) => {
-                        const summary = subtask.fields.summary.toLowerCase();
-                        const isTyc = summary.includes('publicación de banners y t&c') || summary.includes('publicación de landing y t&c');
-                        const isDone = subtask.fields.status.name.toLowerCase() === 'done';
+                        const currentStatus = subtaskStatuses[subtask.key] || subtask.fields.status.name;
+                        const availableTransitions = subtaskTransitions[subtask.key] || [];
 
                         return (
-                          <li key={subtask.key} className={styles.subtaskItem} onClick={() => openSubtask(subtask.key)}>
-                            <span>{subtask.fields.summary}</span>
-                            <strong>{subtask.fields.status.name}</strong>
+                          <li key={subtask.key} className={styles.subtaskItem}>
+                            <span onClick={() => openSubtask(subtask.key)} style={{ cursor: 'pointer', flexGrow: 1 }}>
+                              {subtask.fields.summary}
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} onClick={(e) => e.stopPropagation()}>
+                              <Select
+                                value={{ label: currentStatus, value: currentStatus }}
+                                onChange={(selectedOption) => {
+                                  if (selectedOption) {
+                                    setSubtaskStatuses(prev => ({ ...prev, [subtask.key]: selectedOption.value }));
+                                  }
+                                }}
+                                options={availableTransitions.map(status => ({ label: status, value: status }))}
+                                className={styles.statusSelect}
+                                styles={{ container: (base) => ({ ...base, width: '150px' }) }}
+                                isSearchable={false}
+                              />
+                              <button
+                                className={styles.changeStatusButton}
+                                disabled={isUpdating || currentStatus === subtask.fields.status.name}
+                                onClick={async () => {
+                                  if (!selectedIssue) return;
+                                  setIsUpdating(true);
+                                  try {
+                                    const res = await fetch(`/api/issue/${subtask.key}`, {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ newStatus: currentStatus }),
+                                    });
+                                    if (!res.ok) throw new Error('Error al cambiar estado');
+                                    alert('Estado actualizado');
+                                    await openModal(selectedIssue);
+                                  } catch (error) {
+                                    console.error('Error al actualizar estado:', error);
+                                    alert('No se pudo actualizar el estado');
+                                  } finally {
+                                    setIsUpdating(false);
+                                  }
+                                }}
+                              >
+                                Cambiar
+                              </button>
+                            </div>
                           </li>
                         );
                       })}
