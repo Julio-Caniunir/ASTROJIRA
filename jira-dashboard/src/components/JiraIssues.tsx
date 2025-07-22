@@ -575,10 +575,12 @@ export default function JiraIssues() {
                         ];
                         const currentDisplayStatus = statusDisplayMap[currentStatus] || currentStatus;
 
-                        const StatusIndicator = ({ status }: { status: string }) => {
-                          const color = status === 'Done' ? 'green' : 'red';
-                          return <span style={{ color, marginRight: '8px' }}>●</span>;
-                        };
+                        const formatOptionLabel = ({ value, label }: { value: string, label: string }) => (
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <span style={{ color: value === 'Done' ? 'green' : 'red', marginRight: '8px' }}>●</span>
+                            {label}
+                          </div>
+                        );
 
                         return (
                           <li key={subtask.key} className={styles.subtaskItem}>
@@ -587,7 +589,6 @@ export default function JiraIssues() {
                             </span>
                             {showDropdown ? (
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} onClick={(e) => e.stopPropagation()}>
-                                <StatusIndicator status={currentStatus} />
                                 <Select
                                   value={{ label: currentDisplayStatus, value: currentStatus }}
                                   onChange={async (selectedOption) => {
@@ -616,6 +617,7 @@ export default function JiraIssues() {
                                     }
                                   }}
                                   options={simplifiedOptions}
+                                  formatOptionLabel={formatOptionLabel}
                                   className={styles.statusSelect}
                                   styles={{ container: (base) => ({ ...base, width: '150px' }) }}
                                   isSearchable={false}
