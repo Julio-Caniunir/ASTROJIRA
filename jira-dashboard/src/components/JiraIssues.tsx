@@ -9,14 +9,21 @@ import {
   Draggable,
   DropResult,
 } from 'react-beautiful-dnd';
-function renderADFToReact(adf: any): React.ReactNode {
-  if (!adf) return null;  
+function renderADFToReact(adf: any, attachments: any[] = []): React.ReactNode {
+  if (!adf) return null;
+  
+
+  
+  // Si el comentario es un string simple, lo renderizamos directamente
+  if (typeof adf === 'string') {
+    return <span>{adf}</span>;
+  }
 
   const renderNode = (node: any, index: number): React.ReactNode => {
     // 🔵 Mención
     if (node.type === 'mention') {
+      const mentionText = node.attrs?.text || node.attrs?.displayName || '@usuario';
       return (
-
         <span
           key={index}
           style={{
@@ -29,9 +36,95 @@ function renderADFToReact(adf: any): React.ReactNode {
             display: 'inline-block',
           }}
         >
-          {node.attrs.text}
+          {mentionText}
         </span>
+      );
+    }
 
+    // 🖼️ Media Group
+    if (node.type === 'mediaGroup') {
+      return (
+        <div key={index} style={{ margin: '0.5rem 0' }}>
+          {Array.isArray(node.content) 
+            ? node.content.map((child: any, idx: number) => renderNode(child, idx))
+            : null
+          }
+        </div>
+      );
+    }
+
+    // 🖼️ Media
+    if (node.type === 'media') {
+      const fileId = node.attrs?.id;
+      
+      // Función para obtener el icono según la extensión del archivo
+      const getFileIcon = (filename: string) => {
+        if (!filename) return '📄';
+        const ext = filename.toLowerCase().split('.').pop();
+        switch (ext) {
+          case 'pdf': return '📕';
+          case 'doc':
+          case 'docx': return '📘';
+          case 'xls':
+          case 'xlsx': return '📗';
+          case 'ppt':
+          case 'pptx': return '📙';
+          case 'jpg':
+          case 'jpeg':
+          case 'png':
+          case 'gif': return '🖼️';
+          case 'zip':
+          case 'rar': return '🗜️';
+          case 'txt': return '📝';
+          default: return '📄';
+        }
+      };
+      
+      // Buscar el archivo en la lista de attachments usando el ID
+      const attachment = attachments.find(att => att.id === fileId);
+      
+      // Determinar la URL de descarga según si encontramos el attachment o no
+      let downloadUrl = '#';
+      if (fileId) {
+        if (attachment) {
+          // Usar el attachment ID normal
+          downloadUrl = `/api/attachment/${attachment.id}`;
+        } else {
+           // El fileId es probablemente un Media Services ID
+           downloadUrl = `/api/attachment/${fileId}?mediaId=true`;
+         }
+      }
+      
+      const filename = attachment?.filename || 'Archivo adjunto';
+      const fileIcon = getFileIcon(filename);
+      
+      return (
+        <a
+          key={index}
+          href={downloadUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ 
+            display: 'inline-block',
+            padding: '8px 12px', 
+            backgroundColor: '#f5f5f5', 
+            borderRadius: '4px',
+            margin: '4px 0',
+            fontSize: '0.9em',
+            color: '#0052cc',
+            textDecoration: 'none',
+            border: '1px solid #ddd',
+            cursor: 'pointer'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = '#e6f0ff';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = '#f5f5f5';
+          }}
+        >
+          {fileIcon} {filename}
+        </a>
       );
     }
 
@@ -117,6 +210,30 @@ function renderADFToReact(adf: any): React.ReactNode {
       );
     }
 
+    // 📄 Párrafo
+    if (node.type === 'paragraph') {
+      return (
+        <p key={index} style={{ margin: '0.5rem 0' }}>
+          {Array.isArray(node.content) 
+            ? node.content.map((child: any, idx: number) => renderNode(child, idx))
+            : null
+          }
+        </p>
+      );
+    }
+
+    // 📄 Documento
+    if (node.type === 'doc') {
+      return (
+        <div key={index}>
+          {Array.isArray(node.content) 
+            ? node.content.map((child: any, idx: number) => renderNode(child, idx))
+            : null
+          }
+        </div>
+      );
+    }
+
     // Recursivo para contenido anidado
     if (Array.isArray(node.content)) {
       return node.content.map((child: any, idx: number) => renderNode(child, idx));
@@ -124,6 +241,15 @@ function renderADFToReact(adf: any): React.ReactNode {
 
     return null;
   };
+
+  // Si adf tiene una estructura de documento, procesamos su contenido
+  if (adf.type === 'doc' && Array.isArray(adf.content)) {
+    return (
+      <div>
+        {adf.content.map((node: any, index: number) => renderNode(node, index))}
+      </div>
+    );
+  }
 
   return renderNode(adf, 0);
 }
@@ -183,6 +309,7 @@ export default function JiraIssues() {
   const [mentionUsers, setMentionUsers] = useState<{ id: string; display: string }[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [previousRedIssueKeys, setPreviousRedIssueKeys] = useState<Set<string>>(new Set());
+  const [showAllSubtasks, setShowAllSubtasks] = useState(false);
   const displayMap: Record<string, string> = {
     'To Do': 'Por hacer',
     'Done': 'Hecho',
@@ -615,6 +742,73 @@ export default function JiraIssues() {
 
   const closeSubtask = () => setSelectedSubtask(null);
 
+  // Event listener para cerrar modales con Escape
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (selectedSubtask) {
+          // Si hay una subtarea abierta, cerrarla primero
+          setSelectedSubtask(null);
+        } else if (selectedIssue) {
+          // Si hay un issue abierto, cerrarlo
+          setSelectedIssue(null);
+        }
+      }
+    };
+
+    // Agregar el event listener cuando hay modales abiertos
+    if (selectedIssue || selectedSubtask) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    // Cleanup: remover el event listener
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [selectedIssue, selectedSubtask]);
+
+  // Función para enviar comentarios a subtareas
+  const handleSendComment = async () => {
+    if (!mentionText.trim()) return alert('Escribe un comentario primero');
+    try {
+      const res = await fetch(`/api/issue/${selectedSubtask?.key}/comment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment: mentionText }),
+      });
+      if (!res.ok) throw new Error();
+      alert('✅ Comentario enviado');
+      setMentionText('');
+      if (selectedSubtask) {
+        await openSubtask(selectedSubtask.key); // recarga la subtarea
+      }
+    } catch (err) {
+      alert('❌ Error al enviar comentario');
+      console.error(err);
+    }
+  };
+
+  // Función para enviar comentarios al issue principal
+   const handleSendCommentToIssue = async () => {
+     if (!mentionText.trim()) return alert('Escribe un comentario primero');
+     try {
+       const res = await fetch(`/api/issue/${selectedIssue?.key}/comment`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ comment: mentionText }),
+       });
+       if (!res.ok) throw new Error();
+       alert('✅ Comentario enviado');
+       setMentionText('');
+       if (selectedIssue) {
+         await openModal(selectedIssue); // recarga el issue principal
+       }
+     } catch (err) {
+       alert('❌ Error al enviar comentario');
+       console.error(err);
+     }
+   };
+
   return (
     <div className={styles.container}>
       <div className={styles.issueSection}>
@@ -824,9 +1018,39 @@ export default function JiraIssues() {
                 )}
                 {selectedIssue.fields.subtasks?.length ? (
                   <div className={styles.subtaskSection}>
-                    <h4>📋 Subtareas:</h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <h4 style={{ margin: 0 }}>📋 Subtareas:</h4>
+                      {selectedIssue.fields.subtasks.some(subtask => {
+                        const summary = subtask.fields.summary.toLowerCase();
+                        return !(summary.includes('publicación de banners y t&c') || summary.includes('publicación de landing y t&c'));
+                      }) && (
+                        <button
+                          onClick={() => setShowAllSubtasks(!showAllSubtasks)}
+                          className={styles.expandButton}
+                          style={{
+                            background: 'none',
+                            border: '1px solid var(--primary)',
+                            color: 'var(--primary)',
+                            padding: '0.4rem 0.8rem',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            fontWeight: '500',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          {showAllSubtasks ? '🔼 Ocultar otras' : '🔽 Mostrar todas'}
+                        </button>
+                      )}
+                    </div>
                     <ul className={styles.subtaskList}>
-                      {selectedIssue.fields.subtasks.map((subtask) => {
+                      {selectedIssue.fields.subtasks
+                        .filter((subtask) => {
+                          const summary = subtask.fields.summary.toLowerCase();
+                          const hasDropdown = summary.includes('publicación de banners y t&c') || summary.includes('publicación de landing y t&c');
+                          return hasDropdown || showAllSubtasks;
+                        })
+                        .map((subtask) => {
                         const currentStatus = subtaskStatuses[subtask.key] || subtask.fields.status.name;
                         const availableTransitions = subtaskTransitions[subtask.key] || [];
 
@@ -897,7 +1121,7 @@ export default function JiraIssues() {
                                 />
                               </div>
                             ) : (
-                              <strong>{subtask.fields.status.name}</strong>
+                              <strong style={{ opacity: showAllSubtasks ? 1 : 0.7 }}>{subtask.fields.status.name}</strong>
                             )}
                           </li>
                         );
@@ -917,7 +1141,7 @@ export default function JiraIssues() {
                   <div>
                     <h4>📝 Descripción:</h4>
                     <div className={styles.description}>
-                      {renderADFToReact(selectedIssue.fields.description)}
+                      {renderADFToReact(selectedIssue.fields.description, selectedIssue.fields.attachment || [])}
                     </div>
                   </div>
                 )}
@@ -934,7 +1158,7 @@ export default function JiraIssues() {
                               ({new Date(comment.created).toLocaleString()})
                             </em>
                           </p>
-                          <div>{renderADFToReact(comment.body)}</div>
+                          <div>{renderADFToReact(comment.body, selectedIssue.fields.attachment || [])}</div>
                         </li>
                       ))}
                     </ul>
@@ -942,6 +1166,71 @@ export default function JiraIssues() {
                 ) : (
                   <p className={styles.noComments}>💬 Sin comentarios.</p>
                 )}
+
+                {/* Campo para agregar comentarios al issue principal */}
+                <div className={styles.commentInputWrapper}>
+                  <h4>🗨️ Agregar comentario:</h4>
+                  <MentionsInput
+                    value={mentionText}
+                    onChange={(e) => setMentionText(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Enviar comentario con Ctrl+Enter o Shift+Enter
+                      if ((e.ctrlKey || e.shiftKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        if (mentionText.trim()) {
+                          handleSendCommentToIssue();
+                        }
+                      }
+                    }}
+                    markup="@[{__display__}](id:{__id__})"
+                    className={mentionStyles.mentions}
+                    classNames={{
+                      input: mentionStyles.input
+                    }}
+                    placeholder="Escribe un comentario con @ para mencionar... (Ctrl+Enter para enviar)"
+                  >
+                    <Mention
+                      trigger="@"
+                      markup="@[{__display__}](id:{__id__})"
+                      data={(search, callback) => {
+                        fetch(`/api/issue/${selectedIssue?.key}?mentions=true&query=${search}`)
+                          .then(res => res.json())
+                          .then(users => {
+                            const safeUsers = (users || [])
+                              .map((u: { accountId?: string; id?: string; displayName?: string; display?: string }) => ({
+                                id: u.accountId || u.id,
+                                display: u.displayName || u.display,
+                              }))
+                              .filter((u: { id: string; display: string }) => u.id && u.display);
+                            callback(safeUsers);
+                          })
+                          .catch(() => callback([]));
+                      }}
+                      renderSuggestion={(entry, search, highlightedDisplay, index, focused) => (
+                        <div 
+                          key={entry.id} 
+                          className={focused ? styles.mentionFocused : ''}
+                          style={{
+                            padding: '8px 12px',
+                            backgroundColor: focused ? '#e3f2fd' : 'transparent',
+                            cursor: 'pointer',
+                            borderRadius: '4px',
+                            transition: 'background-color 0.2s ease'
+                          }}
+                        >
+                          👤 {highlightedDisplay}
+                        </div>
+                      )}
+                      displayTransform={(id, display) => `@${display}`}
+                    />
+                  </MentionsInput>
+                  <button
+                    onClick={handleSendCommentToIssue}
+                    className={styles.commentButton}
+                  >
+                    💬 Comentar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -958,45 +1247,7 @@ export default function JiraIssues() {
             {selectedSubtask.fields.duedate && (
               <p>📅 Fecha límite: {new Date(selectedSubtask.fields.duedate).toLocaleDateString()}</p>
             )}
-            <div className={styles.statusControl}>
-              <label><strong>🟢 Estado:</strong></label>
-              <Select
-                value={{ label: subtaskStatus, value: subtaskStatus }}
-                onChange={(selectedOption) => setSubtaskStatus(selectedOption ? selectedOption.value : '')}
-                options={statusOptions.map(status => ({ label: status, value: status }))}
-                className={styles.statusSelect}
-                isSearchable={false}
-              />
-
-              <button
-                disabled={
-                  isUpdating || !selectedSubtask || subtaskStatus === selectedSubtask.fields.status.name
-                }
-                onClick={async () => {
-                  setIsUpdating(true);
-                  try {
-                    const res = await fetch(`/api/issue/${selectedSubtask.key}`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ newStatus: subtaskStatus }),
-                    });
-
-                    if (!res.ok) throw new Error('Error al cambiar estado');
-
-                    alert('Estado actualizado');
-                    closeSubtask(); // o await openSubtask(selectedSubtask.key) si quieres recargar
-                  } catch (error) {
-                    console.error('Error al actualizar estado:', error);
-                    alert('No se pudo actualizar el estado');
-                  } finally {
-                    setIsUpdating(false);
-                  }
-                }}
-                className={styles.changeStatusButton}
-              >
-                {isUpdating ? 'Cambiando...' : 'Cambiar estado'}
-              </button>
-            </div>
+            <p><strong>🟢 Estado actual:</strong> {selectedSubtask.fields.status.name}</p>
             {selectedSubtask.fields.assignee?.displayName && (
               <p>👤 {selectedSubtask.fields.assignee.displayName}</p>
             )}
@@ -1004,8 +1255,23 @@ export default function JiraIssues() {
               <div>
                 <h4>📝 Descripción:</h4>
                 <div className={styles.description}>
-                  {renderADFToReact(selectedSubtask.fields.description)}
+                  {renderADFToReact(selectedSubtask.fields.description, (selectedSubtask.fields as any).attachment || [])}
                 </div>
+              </div>
+            )}
+
+            {(selectedSubtask.fields as any).attachment?.length > 0 && (
+              <div className={styles.attachmentsSection}>
+                <h4>📎 Archivos adjuntos:</h4>
+                <ul className={styles.attachmentList}>
+                  {(selectedSubtask.fields as any).attachment?.map((file: any) => (
+                    <li key={file.id}>
+                      <a href={file.content} target="_blank" rel="noopener noreferrer">
+                        📄 {file.filename} ({(file.size / 1024).toFixed(1)} KB)
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
@@ -1046,7 +1312,7 @@ export default function JiraIssues() {
                         </button>
                       </div>
                       <div className={styles.commentBody}>
-                        {renderADFToReact(comment.body)}
+                        {renderADFToReact(comment.body, (selectedSubtask.fields as any).attachment || [])}
                       </div>
                     </li>
                   ))}
@@ -1061,12 +1327,21 @@ export default function JiraIssues() {
               <MentionsInput
                 value={mentionText}
                 onChange={(e) => setMentionText(e.target.value)}
+                onKeyDown={(e) => {
+                  // Enviar comentario con Ctrl+Enter o Shift+Enter
+                  if ((e.ctrlKey || e.shiftKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    if (mentionText.trim()) {
+                      handleSendComment();
+                    }
+                  }
+                }}
                 markup="@[{__display__}](id:{__id__})"
                 className={mentionStyles.mentions}
                 classNames={{
                   input: mentionStyles.input
                 }}
-                placeholder="Escribe un comentario con @ para mencionar..."
+                placeholder="Escribe un comentario con @ para mencionar... (Ctrl+Enter para enviar)"
               >
                 <Mention
                   trigger="@"
@@ -1085,8 +1360,20 @@ export default function JiraIssues() {
                       })
                       .catch(() => callback([]));
                   }}
-                  renderSuggestion={(entry, search, highlightedDisplay) => (
-                    <div key={entry.id}>{highlightedDisplay}</div>
+                  renderSuggestion={(entry, search, highlightedDisplay, index, focused) => (
+                    <div 
+                      key={entry.id} 
+                      className={focused ? styles.mentionFocused : ''}
+                      style={{
+                        padding: '8px 12px',
+                        backgroundColor: focused ? '#e3f2fd' : 'transparent',
+                        cursor: 'pointer',
+                        borderRadius: '4px',
+                        transition: 'background-color 0.2s ease'
+                      }}
+                    >
+                      👤 {highlightedDisplay}
+                    </div>
                   )}
                   displayTransform={(id, display) => `@${display}`}
                 />
@@ -1098,23 +1385,7 @@ export default function JiraIssues() {
 
 
               <button
-                onClick={async () => {
-                  if (!mentionText.trim()) return alert('Escribe un comentario primero');
-                  try {
-                    const res = await fetch(`/api/issue/${selectedSubtask.key}/comment`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ comment: mentionText }),
-                    });
-                    if (!res.ok) throw new Error();
-                    alert('✅ Comentario enviado');
-                    setMentionText('');
-                    await openSubtask(selectedSubtask.key); // recarga la subtarea
-                  } catch (err) {
-                    alert('❌ Error al enviar comentario');
-                    console.error(err);
-                  }
-                }}
+                onClick={handleSendComment}
                 className={styles.commentButton}
               >
                 💬 Comentar
