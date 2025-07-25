@@ -1,5 +1,7 @@
 import type { APIRoute } from 'astro';
-import { emailJSService } from '../../lib/emailjs-service';
+import { serverEmailService } from '../../lib/server-email-service';
+
+export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -326,7 +328,8 @@ export const POST: APIRoute = async ({ request }) => {
       for (const recipient of emailRecipients) {
         try {
           console.log(`📧 Enviando a: ${recipient}`);
-          const result = await emailJSService.sendEmail({
+          
+          const result = await serverEmailService.sendEmail({
             to: recipient,
             subject: emailSubject,
             html: emailBody,
