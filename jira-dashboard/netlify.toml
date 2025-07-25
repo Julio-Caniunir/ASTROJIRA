@@ -4,9 +4,6 @@
   
   # Directorio donde se generan los archivos estáticos
   publish = "dist"
-  
-  # Versión de Node.js (Astro requiere v18.20.8 o superior)
-  environment = { NODE_VERSION = "18.20.8" }
 
 # Configuración para el contexto de producción
 [context.production]
@@ -105,6 +102,9 @@
 # NOTA: Solo para variables no sensibles
 # Las variables sensibles (passwords, secrets) deben configurarse en la UI de Netlify
 [build.environment]
+  # Versión de Node.js (Astro requiere v18.20.8 o superior)
+  NODE_VERSION = "18.20.8"
+  
   # Configuración de npm
   NPM_FLAGS = "--production=false"
   
