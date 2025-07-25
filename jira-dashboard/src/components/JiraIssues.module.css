@@ -1,10 +1,57 @@
+.tabs {
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #ccc;
+  display: flex;
+}
+
+.tabs button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-right: 0.5rem;
+  border-bottom: 2px solid transparent;
+}
+
+.tabs button.activeTab {
+  border-bottom: 2px solid #007bff;
+  font-weight: bold;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.tabLink, .tabLinkActive {
+  padding: 10px 20px;
+  text-decoration: none;
+  color: #555;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.tabLink:hover {
+  color: #0052cc;
+  background-color: #f0f2f5;
+}
+
+.tabLinkActive {
+  color: #0052cc;
+  border-bottom: 3px solid #0052cc;
+}
+
 /* -------- Base Styles -------- */
 :root {
   --primary: #0310c2;
   --danger: #ff4d4f;
   --bg: #f0f2f5;
   --text-main: #0e0b0b;
-  --text-muted: #ffffff;
+  --text-muted: #6c757d;
   --card-bg: #fff;
   --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   --border-radius: 8px;
@@ -162,7 +209,7 @@ body::before {
     radial-gradient(circle at 70% 80%, rgba(74, 144, 226, 0.1) 0%, transparent 50%),
     linear-gradient(135deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.85) 100%);
   backdrop-filter: blur(12px) saturate(1.2);
-  z-index: 999;
+  z-index: 1002;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -900,6 +947,23 @@ body::before {
   border: 2px solid #8bc34a;
 }
 
+/* Estilos para títulos de cards internas */
+.segmentedCard strong,
+.tournamentCard strong,
+.promotionCard strong {
+  color: #2c3e50 !important;
+  font-weight: 700;
+  font-size: 1rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.issueCard strong {
+  color: #2c3e50 !important;
+  font-weight: 700;
+  font-size: 1rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
 
 .attachmentsSection {
   margin-top: 1rem;
@@ -982,8 +1046,9 @@ body::before {
   justify-content: center;
   color: #666;
   cursor: pointer;
-  z-index: 10;
+  z-index: 1001;
   transition: background 0.2s ease, color 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .closeIcon:hover {

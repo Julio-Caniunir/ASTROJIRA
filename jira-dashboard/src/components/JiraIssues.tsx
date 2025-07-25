@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import Select from 'react-select';
 import { MentionsInput, Mention } from 'react-mentions';
-import mentionStyles from '../types/mentionStyles.module.css';
+import mentionStyles from './mentionStyles.module.css';
 import styles from './JiraIssues.module.css';
+import Navigation from './Navigation';
+
 import {
   DragDropContext,
   Droppable,
@@ -24,6 +26,8 @@ function renderADFToReact(adf: any, attachments: any[] = []): React.ReactNode {
     if (node.type === 'mention') {
       const mentionText = node.attrs?.text || node.attrs?.displayName || '@usuario';
       return (
+    
+      
         <span
           key={index}
           style={{
@@ -293,7 +297,13 @@ type IssueDetail = Issue & {
 
 type SubtaskDetail = IssueDetail;
 
-export default function JiraIssues() {
+interface JiraIssuesProps {
+  userInfo?: { email: string; name: string } | null;
+  isAuthenticated?: boolean;
+  authStatus?: string | null;
+}
+
+export default function JiraIssues({ userInfo, isAuthenticated, authStatus }: JiraIssuesProps) {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIssue, setSelectedIssue] = useState<IssueDetail | null>(null);
@@ -316,7 +326,9 @@ export default function JiraIssues() {
   };
 
   const [statusOptions, setStatusOptions] = useState<string[]>([]);
-  
+
+
+
   // Memoizar greenIssues para evitar recálculos innecesarios
   const greenIssues = useMemo(() => {
     return issues
@@ -353,6 +365,7 @@ export default function JiraIssues() {
 
   // Función para reproducir sonido de notificación estilo Zelda: Song of Storms COMPLETA (~30 segundos)
   const playNotificationSound = () => {
+    if (typeof window === 'undefined') return; // Evitar ejecución en SSR
     try {
       // Crear un contexto de audio
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -586,7 +599,7 @@ export default function JiraIssues() {
       createFullSongOfStorms();
       createExtendedStormEffect();
       
-      console.log('🌩️⚡ Nueva tarjeta detectada - Song of Storms COMPLETA reproducida con velocidad natural (~15 segundos)');
+      
     } catch (error) {
       console.error('Error al reproducir sonido de notificación:', error);
     }
@@ -648,9 +661,12 @@ export default function JiraIssues() {
     };
   }, []);
 
+  // Efecto para cargar credenciales de correo al inicializar
+
+
   // Efecto para detectar nuevas tarjetas en la sección roja y reproducir sonido
   useEffect(() => {
-    if (loading) return; // No verificar durante la carga inicial
+    if (loading || typeof window === 'undefined') return; // No verificar durante la carga inicial o en SSR
     
     const currentRedIssueKeys = new Set(redIssues.map(issue => issue.key));
     
@@ -659,7 +675,7 @@ export default function JiraIssues() {
     
     if (newRedIssues.length > 0 && previousRedIssueKeys.size > 0) {
       // Solo reproducir sonido si no es la primera carga (previousRedIssueKeys.size > 0)
-      console.log(`🚨 ${newRedIssues.length} nueva(s) tarjeta(s) detectada(s) en "FALTA PUBLICAR & SUBIR T&C":`, newRedIssues);
+
       playNotificationSound();
     }
     
@@ -809,10 +825,185 @@ export default function JiraIssues() {
      }
    };
 
+
+
+
+
+
+
+  // Función para generar el contenido del correo
+  const generateEmailContent = (): string => {
+    const totalIssues = issues.length;
+    const greenCount = greenIssues.length;
+    const redCount = redIssues.length;
+    
+    // Función para extraer fechas de los títulos
+    const extractDateFromTitle = (title: string): Date[] => {
+      const dates: Date[] = [];
+      const currentYear = new Date().getFullYear();
+      
+      const patterns = [
+        /\b(\d{1,2})\s+DE\s+(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\b/gi,
+        /\b(\d{1,2})\s+(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE|ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC)\b/gi,
+        /\b(\d{1,2})\/(\d{1,2})\)/g,
+        /\b(\d{1,2})\/(\d{1,2})\b/g,
+        /\b(\d{2})(\d{2})\b/g,
+        /\b(\d{1,2})\s+Y\s+(\d{1,2})\s+DE\s+(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\b/gi
+      ];
+      
+      const monthMap: { [key: string]: number } = {
+        'ENERO': 0, 'ENE': 0, 'FEBRERO': 1, 'FEB': 1, 'MARZO': 2, 'MAR': 2,
+        'ABRIL': 3, 'ABR': 3, 'MAYO': 4, 'MAY': 4, 'JUNIO': 5, 'JUN': 5,
+        'JULIO': 6, 'JUL': 6, 'AGOSTO': 7, 'AGO': 7, 'SEPTIEMBRE': 8, 'SEP': 8,
+        'OCTUBRE': 9, 'OCT': 9, 'NOVIEMBRE': 10, 'NOV': 10, 'DICIEMBRE': 11, 'DIC': 11
+      };
+      
+      patterns.forEach((pattern, index) => {
+        let match;
+        while ((match = pattern.exec(title)) !== null) {
+          if (index <= 1) {
+            const day = parseInt(match[1]);
+            const monthStr = match[2].toUpperCase();
+            const month = monthMap[monthStr];
+            
+            if (month !== undefined && day >= 1 && day <= 31) {
+              const date = new Date(currentYear, month, day);
+              dates.push(date);
+            }
+          } else if (index === 2 || index === 3 || index === 4) {
+            const day = parseInt(match[1]);
+            const month = parseInt(match[2]) - 1;
+            
+            if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+              const date = new Date(currentYear, month, day);
+              dates.push(date);
+            }
+          } else if (index === 5) {
+            const day1 = parseInt(match[1]);
+            const day2 = parseInt(match[2]);
+            const monthStr = match[3].toUpperCase();
+            const month = monthMap[monthStr];
+            
+            if (month !== undefined) {
+              [day1, day2].forEach(day => {
+                if (day >= 1 && day <= 31) {
+                  const date = new Date(currentYear, month, day);
+                  dates.push(date);
+                }
+              });
+            }
+          }
+        }
+      });
+      
+      return dates;
+    };
+    
+    // Calcular días con y sin promociones
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    
+    const issueDates = new Set<number>();
+    
+    issues.forEach((issue: any) => {
+      const datesFromTitle = extractDateFromTitle(issue.fields.summary);
+      datesFromTitle.forEach(date => {
+        if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+          issueDates.add(date.getDate());
+        }
+      });
+    });
+    
+    const daysWithPromotions = issueDates.size;
+    const daysWithoutPromotions = daysInMonth - daysWithPromotions;
+    const coveragePercentage = Math.round((daysWithPromotions / daysInMonth) * 100);
+    
+    // Generar lista de días sin promociones
+    const daysWithoutPromosList: number[] = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      if (!issueDates.has(day)) {
+        daysWithoutPromosList.push(day);
+      }
+    }
+    
+    const monthNames = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    
+    return `
+      <h2>📊 Reporte de Promociones - ${monthNames[currentMonth]} ${currentYear}</h2>
+      <p><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-ES', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })}</p>
+      
+      <h3>📈 Resumen de Cobertura</h3>
+      <ul>
+        <li><strong>Total de días en el mes:</strong> ${daysInMonth}</li>
+        <li><strong>✅ Días con promociones:</strong> ${daysWithPromotions}</li>
+        <li><strong>❌ Días sin promociones:</strong> ${daysWithoutPromotions}</li>
+        <li><strong>📊 Porcentaje de cobertura:</strong> ${coveragePercentage}%</li>
+      </ul>
+      
+      ${daysWithoutPromotions > 0 ? `
+      <h3>🚨 Días sin Promociones (${daysWithoutPromotions})</h3>
+      <p style="color: #d32f2f; font-weight: bold;">Los siguientes días no tienen promociones programadas:</p>
+      <div style="background-color: #ffebee; padding: 15px; border-radius: 8px; border-left: 4px solid #d32f2f;">
+        ${daysWithoutPromosList.map(day => `<span style="display: inline-block; margin: 2px 5px; padding: 4px 8px; background-color: #f44336; color: white; border-radius: 4px; font-weight: bold;">${day}</span>`).join('')}
+      </div>
+      ` : `
+      <h3>🎉 ¡Excelente Cobertura!</h3>
+      <p style="color: #2e7d32; font-weight: bold;">Todos los días del mes tienen promociones programadas.</p>
+      `}
+      
+      <h3>📋 Resumen de Tarjetas</h3>
+      <ul>
+        <li><strong>Total de tarjetas:</strong> ${totalIssues}</li>
+        <li><strong>✅ Completadas (Verde):</strong> ${greenCount}</li>
+        <li><strong>🔴 Pendientes (Rojo):</strong> ${redCount}</li>
+        <li><strong>📊 Porcentaje completado:</strong> ${totalIssues > 0 ? Math.round((greenCount / totalIssues) * 100) : 0}%</li>
+      </ul>
+      
+      ${redCount > 0 ? `
+      <h3>🚨 Tarjetas Pendientes (${redCount})</h3>
+      <ul>
+        ${redIssues.slice(0, 10).map(issue => `
+          <li><strong>${issue.key}:</strong> ${issue.fields.summary}</li>
+        `).join('')}
+        ${redCount > 10 ? `<li><em>... y ${redCount - 10} más</em></li>` : ''}
+      </ul>
+      ` : ''}
+      
+      ${greenCount > 0 ? `
+      <h3>✅ Tarjetas Completadas Recientemente (${Math.min(greenCount, 5)})</h3>
+      <ul>
+        ${greenIssues.slice(0, 5).map(issue => `
+          <li><strong>${issue.key}:</strong> ${issue.fields.summary}</li>
+        `).join('')}
+      </ul>
+      ` : ''}
+      
+      <hr>
+      <p><em>Reporte generado automáticamente por Jira Dashboard</em></p>
+    `;
+  };
+
+
+
   return (
-    <div className={styles.container}>
+    <div>
+      <Navigation currentPage="issues" />
+      <div className={styles.container} style={{ marginTop: '70px', minHeight: 'calc(100vh - 70px)' }}>
       <div className={styles.issueSection}>
         <h3 className={styles.title1}>PUBLICACIÓN DE PIEZAS</h3>
+
+
+
 
         <div className={styles.issueGridWrapper}>
           {/* Sección VERDE */}
@@ -1141,7 +1332,7 @@ export default function JiraIssues() {
                   <div>
                     <h4>📝 Descripción:</h4>
                     <div className={styles.description}>
-                      {renderADFToReact(selectedIssue.fields.description, selectedIssue.fields.attachment || [])}
+                      {renderADFToReact(selectedIssue.fields.description, (selectedIssue.fields as any).attachment || [])}
                     </div>
                   </div>
                 )}
@@ -1158,7 +1349,7 @@ export default function JiraIssues() {
                               ({new Date(comment.created).toLocaleString()})
                             </em>
                           </p>
-                          <div>{renderADFToReact(comment.body, selectedIssue.fields.attachment || [])}</div>
+                          <div>{renderADFToReact(comment.body, (selectedIssue.fields as any).attachment || [])}</div>
                         </li>
                       ))}
                     </ul>
@@ -1396,8 +1587,10 @@ export default function JiraIssues() {
           </div>
         </div>
       )}
+      
+
     </div>
 
+    </div>
   );
-
 }

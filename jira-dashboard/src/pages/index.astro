@@ -1,5 +1,13 @@
 ---
 import JiraIssues from '../components/JiraIssues.tsx';
+
+// Obtener información de autenticación desde cookies
+const accessToken = Astro.cookies.get('microsoft_access_token')?.value;
+const userInfoCookie = Astro.cookies.get('user_info')?.value;
+const userInfo = userInfoCookie ? JSON.parse(userInfoCookie) : null;
+
+// Obtener parámetros de URL para mostrar mensajes de autenticación
+const authStatus = Astro.url.searchParams.get('auth');
 ---
 
 <html>
@@ -9,7 +17,11 @@ import JiraIssues from '../components/JiraIssues.tsx';
     <title>Jira Dashboard</title>
   </head>
   <body>
-  
-    <JiraIssues client:only="react" />
+    <JiraIssues 
+      client:only="react" 
+      userInfo={userInfo}
+      isAuthenticated={!!accessToken}
+      authStatus={authStatus}
+    />
   </body>
 </html>

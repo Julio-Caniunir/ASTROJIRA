@@ -1,0 +1,129 @@
+[build]
+  # Comando de build para Astro
+  command = "npm run build"
+  
+  # Directorio donde se generan los archivos estáticos
+  publish = "dist"
+  
+  # Versión de Node.js (Astro requiere v18.20.8 o superior)
+  environment = { NODE_VERSION = "18.20.8" }
+
+# Configuración para el contexto de producción
+[context.production]
+  command = "npm run build"
+  publish = "dist"
+  
+  [context.production.environment]
+    NODE_ENV = "production"
+    # Las variables sensibles deben configurarse en la UI de Netlify
+    # No incluir aquí: EMAIL_PASS, MICROSOFT_CLIENT_SECRET, etc.
+
+# Configuración para Deploy Previews (Pull Requests)
+[context.deploy-preview]
+  command = "npm run build"
+  publish = "dist"
+  
+  [context.deploy-preview.environment]
+    NODE_ENV = "preview"
+
+# Configuración para deploys de ramas
+[context.branch-deploy]
+  command = "npm run build"
+  publish = "dist"
+  
+  [context.branch-deploy.environment]
+    NODE_ENV = "development"
+
+# Configuración para desarrollo local con Netlify Dev
+[context.dev]
+  command = "npm run dev"
+  port = 4321
+  
+  [context.dev.environment]
+    NODE_ENV = "development"
+
+# Redirects para SPA (Single Page Application)
+# Esto asegura que las rutas del lado del cliente funcionen correctamente
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = ["admin", "editor"], Country = ["US"]}
+  force = false
+
+# Headers de seguridad
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.emailjs.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.emailjs.com https://estelarbetlatam.webhook.office.com;"
+
+# Headers específicos para archivos estáticos
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Headers para archivos de fuentes
+[[headers]]
+  for = "/*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Access-Control-Allow-Origin = "*"
+
+# Configuración de funciones (si usas Netlify Functions)
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Configuración de Edge Functions (si las usas)
+[edge_functions]
+  directory = "netlify/edge-functions"
+
+# Configuración de procesamiento de imágenes
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
+
+[build.processing.images]
+  compress = true
+
+# Variables de entorno específicas del build
+# NOTA: Solo para variables no sensibles
+# Las variables sensibles (passwords, secrets) deben configurarse en la UI de Netlify
+[build.environment]
+  # Configuración de npm
+  NPM_FLAGS = "--production=false"
+  
+  # Configuración específica de Astro
+  ASTRO_TELEMETRY_DISABLED = "1"
+  
+  # Variables públicas (estas son seguras de incluir aquí)
+  # PUBLIC_EMAILJS_SERVICE_ID se configurará en la UI por seguridad
+  # PUBLIC_EMAILJS_TEMPLATE_ID se configurará en la UI por seguridad
+  # PUBLIC_EMAILJS_PUBLIC_KEY se configurará en la UI por seguridad
+  # PUBLIC_TEAMS_WEBHOOK_URL se configurará en la UI por seguridad
+
+# Configuración de plugins (si usas alguno)
+[[plugins]]
+  package = "@netlify/plugin-lighthouse"
+  
+  [plugins.inputs]
+    output_path = "reports/lighthouse.html"
+
+# Configuración de notificaciones de deploy
+[template.environment]
+  NETLIFY_EMAILS_ENABLED = "true"
