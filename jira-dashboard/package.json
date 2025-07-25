@@ -12,6 +12,7 @@
     "@astrojs/node": "^9.3.0",
     "@astrojs/react": "^4.3.0",
     "@azure/msal-node": "^3.6.4",
+    "@emailjs/browser": "^4.4.1",
     "@microsoft/microsoft-graph-client": "^3.0.7",
     "@types/nodemailer": "^6.4.17",
     "@types/react-big-calendar": "^1.16.2",
