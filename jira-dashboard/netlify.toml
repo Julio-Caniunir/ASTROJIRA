@@ -76,9 +76,11 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Configuración de Edge Functions (si las usas)
-[edge_functions]
-  directory = "netlify/edge-functions"
+# Configuración de Edge Functions comentada (no se usa actualmente)
+# Si necesitas Edge Functions en el futuro, usa esta sintaxis:
+# [[edge_functions]]
+#   path = "/api/*"
+#   function = "api-handler"
 
 # Configuración de procesamiento de imágenes
 [build.processing]
