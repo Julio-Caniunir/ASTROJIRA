@@ -5,6 +5,6 @@ import netlify from '@astrojs/netlify';
 // https://astro.build/config
 export default defineConfig({
   integrations: [react()],
-  output: 'server',
-  adapter: netlify()
+  output: process.env.NODE_ENV === 'production' ? 'server' : 'static',
+  adapter: process.env.NODE_ENV === 'production' ? netlify() : undefined
 });

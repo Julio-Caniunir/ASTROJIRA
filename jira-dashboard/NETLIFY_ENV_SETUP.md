@@ -55,13 +55,7 @@ EMAIL_PASS=pcaddictXD23@@
 EMAIL_TO=julio__1995@hotmai.com
 ```
 
-### Variables de Microsoft Azure
-```
-MICROSOFT_CLIENT_ID=your_client_id_here
-MICROSOFT_CLIENT_SECRET=your_client_secret_here
-MICROSOFT_REDIRECT_URI=https://tu-sitio.netlify.app/api/auth/callback
-```
-**Nota:** Actualiza `MICROSOFT_REDIRECT_URI` con tu URL de producción de Netlify.
+
 
 ### Variables de EmailJS (Públicas)
 ```

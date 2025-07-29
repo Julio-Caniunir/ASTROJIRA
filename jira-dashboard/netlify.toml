@@ -13,7 +13,7 @@
   [context.production.environment]
     NODE_ENV = "production"
     # Las variables sensibles deben configurarse en la UI de Netlify
-    # No incluir aquí: EMAIL_PASS, MICROSOFT_CLIENT_SECRET, etc.
+    # No incluir aquí: EMAIL_PASS, etc.
 
 # Configuración para Deploy Previews (Pull Requests)
 [context.deploy-preview]

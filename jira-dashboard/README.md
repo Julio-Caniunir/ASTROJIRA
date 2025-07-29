@@ -1,12 +1,12 @@
 # Jira Dashboard - Astro Project
 
-Un dashboard moderno para gestión de issues de Jira construido con Astro, que incluye integración con EmailJS, Microsoft Teams y funcionalidades de calendario.
+Un dashboard moderno para gestión de issues de Jira construido con Astro, que incluye integración con EmailJS, Teams y funcionalidades de calendario.
 
 ## ✨ Características
 
 - 📊 Dashboard interactivo para issues de Jira
 - 📧 Integración con EmailJS para envío de correos
-- 🔔 Notificaciones a Microsoft Teams via webhooks
+- 🔔 Notificaciones a Teams via webhooks
 - 📅 Vista de calendario para gestión de tareas
 - 🎨 Interfaz moderna y responsive
 - ⚡ Construido con Astro para máximo rendimiento
@@ -55,11 +55,6 @@ EMAIL_PORT=587
 EMAIL_USER=tu-email@dominio.com
 EMAIL_PASS=tu-password-de-aplicacion
 EMAIL_TO=destinatario@dominio.com
-
-# Microsoft Azure Configuration
-MICROSOFT_CLIENT_ID=tu_client_id
-MICROSOFT_CLIENT_SECRET=tu_client_secret
-MICROSOFT_REDIRECT_URI=https://tu-sitio.netlify.app/api/auth/callback
 
 # EmailJS Configuration
 PUBLIC_EMAILJS_SERVICE_ID=tu_service_id
@@ -114,14 +109,12 @@ netlify deploy --build --prod
 
 - [NETLIFY_ENV_SETUP.md](./NETLIFY_ENV_SETUP.md) - Configuración de variables de entorno
 - [EMAILJS_SETUP.md](./EMAILJS_SETUP.md) - Configuración de EmailJS
-- [MICROSOFT_SETUP.md](./MICROSOFT_SETUP.md) - Configuración de Microsoft Azure
 
 ## 🔗 Enlaces Útiles
 
 - [Documentación de Astro](https://docs.astro.build)
 - [Documentación de Netlify](https://docs.netlify.com)
 - [EmailJS](https://www.emailjs.com/)
-- [Microsoft Azure Portal](https://portal.azure.com/)
 
 ## 🤝 Contribuir
 

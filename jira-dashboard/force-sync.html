@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Force Sync Promo Registry</title>
+</head>
+<body>
+    <h1>Forzar Sincronización del Registro de Promociones</h1>
+    <div id="output"></div>
+    <button onclick="forceSyncNow()" style="background: #22c55e; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">🔄 Sincronizar Ahora</button>
+    <button onclick="checkStatus()" style="background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-left: 10px;">📊 Verificar Estado</button>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.innerHTML += '<p style="margin: 5px 0; padding: 5px; background: #f1f5f9; border-left: 3px solid #3b82f6;">' + message + '</p>';
+            console.log(message);
+        }
+        
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+        
+        // Función extractDateFromTitle exacta del código
+        function extractDateFromTitle(title) {
+            const dates = [];
+            const currentYear = new Date().getFullYear();
+            
+            const patterns = [
+                /\b(\d{1,2})\s+DE\s+(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\b/gi,
+                /\b(\d{1,2})\s+(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE|ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC)\b/gi,
+                /\b(\d{1,2})\/(\d{1,2})\)/g,
+                /\b(\d{1,2})\/(\d{1,2})\b/g,
+                /\b(\d{2})(\d{2})\b/g,
+                /\b(\d{1,2})\s+Y\s+(\d{1,2})\s+DE\s+(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\b/gi
+            ];
+            
+            const monthMap = {
+                'ENERO': 0, 'ENE': 0, 'FEBRERO': 1, 'FEB': 1, 'MARZO': 2, 'MAR': 2,
+                'ABRIL': 3, 'ABR': 3, 'MAYO': 4, 'MAY': 4, 'JUNIO': 5, 'JUN': 5,
+                'JULIO': 6, 'JUL': 6, 'AGOSTO': 7, 'AGO': 7, 'SEPTIEMBRE': 8, 'SEP': 8,
+                'OCTUBRE': 9, 'OCT': 9, 'NOVIEMBRE': 10, 'NOV': 10, 'DICIEMBRE': 11, 'DIC': 11
+            };
+            
+            patterns.forEach((pattern, index) => {
+                let match;
+                while ((match = pattern.exec(title)) !== null) {
+                    if (index <= 1) {
+                        const day = parseInt(match[1]);
+                        const monthStr = match[2].toUpperCase();
+                        const month = monthMap[monthStr];
+                        
+                        if (month !== undefined && day >= 1 && day <= 31) {
+                            const date = new Date(currentYear, month, day);
+                            dates.push(date);
+                            
+                            // Para rangos (patrón 5)
+                            if (index === 5 && match[3]) {
+                                const day2 = parseInt(match[2]);
+                                if (day2 >= 1 && day2 <= 31) {
+                                    const date2 = new Date(currentYear, month, day2);
+                                    dates.push(date2);
+                                }
+                            }
+                        }
+                    } else if (index === 2 || index === 3) {
+                        const day = parseInt(match[1]);
+                        const month = parseInt(match[2]) - 1;
+                        
+                        if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+                            const date = new Date(currentYear, month, day);
+                            dates.push(date);
+                        }
+                    } else if (index === 4) {
+                        const day = parseInt(match[1]);
+                        const month = parseInt(match[2]) - 1;
+                        
+                        if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+                            const date = new Date(currentYear, month, day);
+                            dates.push(date);
+                        }
+                    }
+                }
+            });
+            
+            return dates;
+        }
+        
+        async function forceSyncNow() {
+            clearOutput();
+            log('🔄 <strong>Iniciando sincronización forzada...</strong>');
+            
+            try {
+                // Paso 1: Obtener datos de Jira
+                log('📡 Obteniendo issues de Jira...');
+                const response = await fetch('/api/all-issues');
+                if (!response.ok) {
+                    throw new Error(`Error al obtener issues: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const issues = data.issues || [];
+                log(`✅ Obtenidos ${issues.length} issues de Jira`);
+                
+                // Paso 2: Extraer fechas de títulos
+                log('🔍 Extrayendo fechas de los títulos...');
+                const allExtractedDatesWithIssue = [];
+                const uniqueDateIssueKeys = new Set();
+                let issuesWithDates = 0;
+                
+                issues.forEach(issue => {
+                    const extractedDates = extractDateFromTitle(issue.fields.summary);
+                    if (extractedDates.length > 0) {
+                        issuesWithDates++;
+                        extractedDates.forEach(date => {
+                            const dateIssueKey = `${date.toDateString()}-${issue.key}`;
+                            if (!uniqueDateIssueKeys.has(dateIssueKey)) {
+                                uniqueDateIssueKeys.add(dateIssueKey);
+                                allExtractedDatesWithIssue.push({
+                                    date: date,
+                                    issueKey: issue.key,
+                                    issueSummary: issue.fields.summary
+                                });
+                            }
+                        });
+                    }
+                });
+                
+                log(`✅ Encontrados ${issuesWithDates} issues con fechas en títulos`);
+                log(`✅ Total de fechas únicas extraídas: ${allExtractedDatesWithIssue.length}`);
+                
+                if (allExtractedDatesWithIssue.length === 0) {
+                    log('⚠️ <strong>No se encontraron fechas en los títulos de los issues</strong>');
+                    log('💡 Esto puede significar que:');
+                    log('   • Los títulos no contienen fechas en formato reconocible');
+                    log('   • Los patrones de fecha necesitan ajuste');
+                    log('   • No hay promociones programadas en Jira');
+                    return;
+                }
+                
+                // Mostrar muestra de fechas extraídas
+                log('<br>📋 <strong>Muestra de fechas extraídas:</strong>');
+                allExtractedDatesWithIssue.slice(0, 5).forEach((item, index) => {
+                    log(`${index + 1}. ${item.date.toLocaleDateString('es-ES')} - ${item.issueKey}`);
+                    log(`   📝 ${item.issueSummary.substring(0, 80)}...`);
+                });
+                
+                // Paso 3: Sincronizar con el API del registro
+                log('<br>🔄 Sincronizando con el registro de promociones...');
+                
+                const syncResponse = await fetch('/api/promo-registry', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'sync-jira',
+                        jiraPromos: allExtractedDatesWithIssue
+                    })
+                });
+                
+                if (!syncResponse.ok) {
+                    throw new Error(`Error en sincronización: ${syncResponse.status} ${syncResponse.statusText}`);
+                }
+                
+                const syncResult = await syncResponse.json();
+                log('✅ <strong>¡Sincronización completada exitosamente!</strong>');
+                
+                // Paso 4: Verificar datos guardados
+                setTimeout(() => {
+                    checkStatus();
+                }, 1000);
+                
+            } catch (error) {
+                log(`❌ <strong>Error durante la sincronización:</strong> ${error.message}`);
+            }
+        }
+        
+        function checkStatus() {
+            log('<br>📊 <strong>Verificando estado del registro...</strong>');
+            
+            const promoData = localStorage.getItem('promo-registry-data');
+            if (promoData) {
+                try {
+                    const data = JSON.parse(promoData);
+                    const activeRecords = data.records ? data.records.filter(r => r.status === 'active') : [];
+                    const deletedRecords = data.records ? data.records.filter(r => r.status === 'deleted') : [];
+                    
+                    log(`✅ <strong>Datos encontrados en localStorage:</strong>`);
+                    log(`📈 Total de registros: ${data.records ? data.records.length : 0}`);
+                    log(`✅ Registros activos: ${activeRecords.length}`);
+                    log(`🗑️ Registros eliminados: ${deletedRecords.length}`);
+                    log(`🕒 Última sincronización: ${data.lastSync || 'Nunca'}`);
+                    
+                    if (activeRecords.length > 0) {
+                        log('<br>📋 <strong>Registros activos recientes:</strong>');
+                        activeRecords.slice(0, 3).forEach((record, index) => {
+                            log(`${index + 1}. ${record.date} - ${record.issueKey} (${record.source})`);
+                            log(`   📝 ${record.issueSummary.substring(0, 60)}...`);
+                        });
+                        
+                        log('<br>🎉 <strong>¡El registro de promociones ya tiene datos!</strong>');
+                        log('💡 Ahora puedes:');
+                        log('   • Ver las promociones en el panel del dashboard');
+                        log('   • Exportar los datos a Excel');
+                        log('   • Gestionar promociones manualmente');
+                    }
+                } catch (error) {
+                    log(`❌ Error al leer datos: ${error.message}`);
+                }
+            } else {
+                log('❌ <strong>No hay datos en localStorage</strong>');
+                log('💡 Ejecuta la sincronización para poblar el registro');
+            }
+        }
+        
+        // Ejecutar verificación inicial
+        window.onload = function() {
+            checkStatus();
+        };
+    </script>
+</body>
+</html>

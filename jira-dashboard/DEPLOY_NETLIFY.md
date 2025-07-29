@@ -64,16 +64,11 @@ EMAIL_PORT=587
 EMAIL_USER=julio.caniunir@estelarbet.com
 EMAIL_PASS=pcaddictXD23@@
 EMAIL_TO=julio__1995@hotmai.com
-MICROSOFT_CLIENT_ID=your_client_id_here
-MICROSOFT_CLIENT_SECRET=your_client_secret_here
-MICROSOFT_REDIRECT_URI=https://tu-sitio.netlify.app/api/auth/callback
 PUBLIC_EMAILJS_SERVICE_ID=service_cecrpcu
 PUBLIC_EMAILJS_TEMPLATE_ID=JiraDashboard
 PUBLIC_EMAILJS_PUBLIC_KEY=oRYnfWyhgMhe1LDuZ
 PUBLIC_TEAMS_WEBHOOK_URL=https://estelarbetlatam.webhook.office.com/webhookb2/fdabeb19-9bf4-4ce7-8918-13f1d2ab3f80@32cbcc89-955d-4420-8e16-d848eda58eb0/IncomingWebhook/41f36215203e441c958ac05c22457dcd/9f0d7f89-d2ea-4667-8927-d880d2f75ec0/V2-izHe-i7vMnzirv6vTW5YYJfvES8RHs-oSO_W5pf6Ag1
 ```
-
-4. **IMPORTANTE**: Actualiza `MICROSOFT_REDIRECT_URI` con tu URL real de Netlify
 
 ### 4. Deploy
 
@@ -119,7 +114,7 @@ npm install
 ### Errores de CORS
 
 - Verifica que las URLs en `netlify.toml` sean correctas
-- Asegúrate de que `MICROSOFT_REDIRECT_URI` apunte a tu dominio de Netlify
+- Verifica que todas las variables de entorno estén configuradas correctamente
 
 ### Funciones No Funcionan
 
@@ -130,7 +125,7 @@ npm install
 
 - [ ] Proyecto compila localmente (`npm run build`)
 - [ ] Variables de entorno configuradas en Netlify
-- [ ] `MICROSOFT_REDIRECT_URI` actualizada con URL de producción
+- [ ] Variables de entorno configuradas en producción
 - [ ] `netlify.toml` presente en la raíz del proyecto
 - [ ] Build command: `npm run build`
 - [ ] Publish directory: `dist`

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Date Extraction</title>
+</head>
+<body>
+    <h1>Test Date Extraction Function</h1>
+    <div id="output"></div>
+    <button onclick="testDateExtraction()">Test Date Extraction</button>
+    <button onclick="testWithRealData()">Test with Real Jira Data</button>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.innerHTML += '<p>' + message + '</p>';
+            console.log(message);
+        }
+        
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+        
+        // Función extractDateFromTitle copiada del código
+        function extractDateFromTitle(title) {
+            const dates = [];
+            const currentYear = new Date().getFullYear();
+            
+            const patterns = [
+                /\b(\d{1,2})\s+DE\s+(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\b/gi,
+                /\b(\d{1,2})\s+(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE|ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC)\b/gi,
+                /\b(\d{1,2})\/(\d{1,2})\)/g,
+                /\b(\d{1,2})\/(\d{1,2})\b/g,
+                /\b(\d{2})(\d{2})\b/g,
+                /\b(\d{1,2})\s+Y\s+(\d{1,2})\s+DE\s+(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\b/gi
+            ];
+            
+            const monthMap = {
+                'ENERO': 0, 'ENE': 0, 'FEBRERO': 1, 'FEB': 1, 'MARZO': 2, 'MAR': 2,
+                'ABRIL': 3, 'ABR': 3, 'MAYO': 4, 'MAY': 4, 'JUNIO': 5, 'JUN': 5,
+                'JULIO': 6, 'JUL': 6, 'AGOSTO': 7, 'AGO': 7, 'SEPTIEMBRE': 8, 'SEP': 8,
+                'OCTUBRE': 9, 'OCT': 9, 'NOVIEMBRE': 10, 'NOV': 10, 'DICIEMBRE': 11, 'DIC': 11
+            };
+            
+            patterns.forEach((pattern, index) => {
+                let match;
+                while ((match = pattern.exec(title)) !== null) {
+                    if (index <= 1) {
+                        const day = parseInt(match[1]);
+                        const monthStr = match[2].toUpperCase();
+                        const month = monthMap[monthStr];
+                        
+                        if (month !== undefined && day >= 1 && day <= 31) {
+                            const date = new Date(currentYear, month, day);
+                            dates.push(date);
+                            
+                            // Para rangos (patrón 5)
+                            if (index === 5 && match[3]) {
+                                const day2 = parseInt(match[2]);
+                                if (day2 >= 1 && day2 <= 31) {
+                                    const date2 = new Date(currentYear, month, day2);
+                                    dates.push(date2);
+                                }
+                            }
+                        }
+                    } else if (index === 2 || index === 3) {
+                        const day = parseInt(match[1]);
+                        const month = parseInt(match[2]) - 1;
+                        
+                        if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+                            const date = new Date(currentYear, month, day);
+                            dates.push(date);
+                        }
+                    } else if (index === 4) {
+                        const day = parseInt(match[1]);
+                        const month = parseInt(match[2]) - 1;
+                        
+                        if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+                            const date = new Date(currentYear, month, day);
+                            dates.push(date);
+                        }
+                    }
+                }
+            });
+            
+            return dates;
+        }
+        
+        function testDateExtraction() {
+            clearOutput();
+            log('=== TESTING DATE EXTRACTION ===');
+            
+            const testTitles = [
+                'Promoción 17 DE ENERO - Test',
+                'Promo 21 enero especial',
+                'Oferta 15/01 válida',
+                'Descuento 2501 limitado',
+                'Promoción 10 Y 11 DE FEBRERO',
+                'Sin fecha en este título',
+                'Multiple dates: 5 DE MARZO y 15/03',
+                'Formato con paréntesis 20/02)',
+                'PROMO 1 ENE hasta 5 ENE'
+            ];
+            
+            testTitles.forEach(title => {
+                const extractedDates = extractDateFromTitle(title);
+                log(`Título: "${title}"`);
+                if (extractedDates.length > 0) {
+                    extractedDates.forEach(date => {
+                        log(`  → Fecha extraída: ${date.toLocaleDateString('es-ES')}`);
+                    });
+                } else {
+                    log('  → No se encontraron fechas');
+                }
+                log('');
+            });
+        }
+        
+        async function testWithRealData() {
+            clearOutput();
+            log('=== TESTING WITH REAL JIRA DATA ===');
+            
+            try {
+                const response = await fetch('/api/all-issues');
+                const data = await response.json();
+                const issues = data.issues || [];
+                
+                log(`Total de issues obtenidos: ${issues.length}`);
+                log('');
+                
+                let issuesWithDates = 0;
+                let totalDatesExtracted = 0;
+                
+                issues.slice(0, 20).forEach((issue, index) => {
+                    const title = issue.fields.summary;
+                    const extractedDates = extractDateFromTitle(title);
+                    
+                    if (extractedDates.length > 0) {
+                        issuesWithDates++;
+                        totalDatesExtracted += extractedDates.length;
+                        
+                        log(`${index + 1}. ${issue.key}: "${title}"`);
+                        extractedDates.forEach(date => {
+                            log(`   → ${date.toLocaleDateString('es-ES')}`);
+                        });
+                        log('');
+                    }
+                });
+                
+                log(`=== RESUMEN (primeros 20 issues) ===`);
+                log(`Issues con fechas extraídas: ${issuesWithDates}`);
+                log(`Total de fechas extraídas: ${totalDatesExtracted}`);
+                
+                // Analizar todos los issues
+                let allIssuesWithDates = 0;
+                let allDatesExtracted = 0;
+                
+                issues.forEach(issue => {
+                    const extractedDates = extractDateFromTitle(issue.fields.summary);
+                    if (extractedDates.length > 0) {
+                        allIssuesWithDates++;
+                        allDatesExtracted += extractedDates.length;
+                    }
+                });
+                
+                log('');
+                log(`=== RESUMEN COMPLETO ===`);
+                log(`Total de issues: ${issues.length}`);
+                log(`Issues con fechas extraídas: ${allIssuesWithDates}`);
+                log(`Total de fechas extraídas: ${allDatesExtracted}`);
+                
+            } catch (error) {
+                log(`Error: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

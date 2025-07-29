@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Promo Sync</title>
+</head>
+<body>
+    <h1>Test Promo Registry Sync</h1>
+    <div id="output"></div>
+    <button onclick="testSync()">Test Sync with Sample Data</button>
+    <button onclick="checkData()">Check Current Data</button>
+    <button onclick="clearData()">Clear All Data</button>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.innerHTML += '<p>' + message + '</p>';
+            console.log(message);
+        }
+        
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+        
+        async function testSync() {
+            clearOutput();
+            log('=== TESTING PROMO SYNC ===');
+            
+            // Simular datos de Jira
+            const sampleJiraData = [
+                {
+                    date: new Date('2025-01-17'),
+                    issueKey: 'PROM-TEST1',
+                    issueSummary: 'Test Promo 17 enero - Sample promotion'
+                },
+                {
+                    date: new Date('2025-01-21'),
+                    issueKey: 'PROM-TEST2', 
+                    issueSummary: 'Test Promo 21 enero - Another promotion'
+                },
+                {
+                    date: new Date('2025-01-22'),
+                    issueKey: 'PROM-TEST3',
+                    issueSummary: 'Test Promo 22 enero - Third promotion'
+                }
+            ];
+            
+            try {
+                // Llamar a la API de sincronización
+                const response = await fetch('/api/promo-registry', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'sync-jira',
+                        jiraPromos: sampleJiraData.map(promo => ({
+                            date: promo.date.toISOString(),
+                            issueKey: promo.issueKey,
+                            issueSummary: promo.issueSummary
+                        }))
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Sync successful: ' + result.message);
+                    log('Now checking localStorage...');
+                    checkData();
+                } else {
+                    log('❌ Sync failed: ' + result.error);
+                }
+            } catch (error) {
+                log('❌ Error during sync: ' + error.message);
+            }
+        }
+        
+        function checkData() {
+            log('\n=== CHECKING CURRENT DATA ===');
+            
+            const promoData = localStorage.getItem('promo_registry_data');
+            if (promoData) {
+                try {
+                    const parsed = JSON.parse(promoData);
+                    log('✅ Found promo_registry_data in localStorage');
+                    log('📊 Total records: ' + parsed.records.length);
+                    log('✅ Active records: ' + parsed.records.filter(r => r.status === 'active').length);
+                    log('🗑️ Deleted records: ' + parsed.records.filter(r => r.status === 'deleted').length);
+                    log('📅 Last sync: ' + parsed.lastSync);
+                    
+                    if (parsed.records.length > 0) {
+                        log('\n=== RECENT RECORDS ===');
+                        parsed.records.slice(-5).forEach((record, index) => {
+                            log(`Record ${index + 1}: ${record.date} - ${record.issueKey} - ${record.status} - ${record.source}`);
+                        });
+                    } else {
+                        log('❌ NO RECORDS FOUND IN DATABASE');
+                    }
+                } catch (e) {
+                    log('❌ Error parsing promo_registry_data: ' + e.message);
+                }
+            } else {
+                log('❌ No promo_registry_data found in localStorage');
+            }
+        }
+        
+        function clearData() {
+            localStorage.removeItem('promo_registry_data');
+            localStorage.removeItem('promo_registry_backup');
+            log('🗑️ All promo data cleared from localStorage');
+        }
+        
+        // Check data on page load
+        window.onload = function() {
+            checkData();
+        };
+    </script>
+</body>
+</html>

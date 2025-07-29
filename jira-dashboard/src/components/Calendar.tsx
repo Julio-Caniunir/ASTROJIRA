@@ -5,6 +5,8 @@ import styles from './JiraIssues.module.css';
 import Navigation from './Navigation';
 import { EmailCredentialsForm } from './EmailCredentialsForm';
 import { emailService } from '../lib/simple-email-service';
+import { promoRegistryService } from '../lib/promo-registry-service';
+import PromoRegistryPanel from './PromoRegistryPanel';
 interface EmailCredentials {
   username: string;
   password: string;
@@ -59,6 +61,13 @@ const Calendar: React.FC = () => {
   const [isEmailAuthenticated, setIsEmailAuthenticated] = useState(false);
   const [quickEmailRecipient, setQuickEmailRecipient] = useState<string>('');
   const [teamsWebhookUrl] = useState<string>(import.meta.env.PUBLIC_TEAMS_WEBHOOK_URL || '');
+  
+  // Estados para selección de mes y año del reporte
+  const [reportMonth, setReportMonth] = useState<number>(new Date().getMonth());
+  const [reportYear, setReportYear] = useState<number>(new Date().getFullYear());
+  
+  // Estado para el panel de registro interno
+  const [showRegistryPanel, setShowRegistryPanel] = useState(false);
 
   // Función para extraer fechas de los títulos
   const extractDateFromTitle = (title: string): Date[] => {
@@ -252,6 +261,20 @@ const Calendar: React.FC = () => {
         
         setIssuesByDate(dateIssueMap);
         
+        // Sincronizar con el registro interno de promociones
+        try {
+          const jiraPromos = uniqueExtractedDatesWithIssue.map((item: { date: Date; issueKey: string; issueSummary: string }) => ({
+            date: item.date,
+            issueKey: item.issueKey,
+            issueSummary: item.issueSummary
+          }));
+          
+          promoRegistryService.syncWithJiraData(jiraPromos);
+          console.log('✅ Registro interno sincronizado con datos de Jira');
+        } catch (syncError) {
+          console.error('Error sincronizando registro interno:', syncError);
+        }
+        
       } catch (error) {
         console.error('Error fetching issues for calendar:', error);
       }
@@ -368,7 +391,12 @@ const Calendar: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ to: recipients, analysisOnly: true }),
+        body: JSON.stringify({ 
+          to: recipients, 
+          analysisOnly: true,
+          month: reportMonth,
+          year: reportYear
+        }),
       });
 
       const analysisData = await analysisResponse.json();
@@ -397,7 +425,7 @@ const Calendar: React.FC = () => {
               to: recipient,
               subject: analysisData.emailSubject || 'Reporte de Promociones Faltantes',
               html: analysisData.emailBody || 'No hay contenido disponible',
-              from: 'julio.caniunir@estelarbet.com'
+              from: 'ti.estelarbet@estelarbet.com'
             });
             
             console.log(`📧 Resultado para ${recipient}:`, emailResult);
@@ -454,7 +482,11 @@ const Calendar: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ webhookUrl: teamsWebhookUrl }),
+        body: JSON.stringify({ 
+          webhookUrl: teamsWebhookUrl,
+          month: reportMonth,
+          year: reportYear
+        }),
       });
 
       const data = await response.json();
@@ -574,8 +606,44 @@ const Calendar: React.FC = () => {
       
 
       
-      {/* Botón para mostrar/ocultar Sistema de Reportes */}
-      <div style={{ marginTop: '20px', textAlign: 'center' }}>
+      {/* Botones para Sistema de Reportes y Registro Interno */}
+      <div style={{ marginTop: '20px', textAlign: 'center', display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setShowRegistryPanel(true)}
+          style={{
+            padding: '14px 28px',
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            color: 'white',
+            border: '2px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '12px',
+            fontSize: '16px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4), 0 2px 8px rgba(0, 0, 0, 0.1)',
+            textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+            letterSpacing: '0.5px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #059669 0%, #047857 100%)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.5), 0 4px 12px rgba(0, 0, 0, 0.15)';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.4), 0 2px 8px rgba(0, 0, 0, 0.1)';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+          }}
+        >
+          📊 Registro Interno
+        </button>
+        
         <button
           onClick={() => setShowReportsPanel(!showReportsPanel)}
           style={{
@@ -693,6 +761,87 @@ const Calendar: React.FC = () => {
                       e.currentTarget.style.boxShadow = 'none';
                     }}
                   />
+                </div>
+                
+                {/* Selectores de mes y año */}
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
+                    }}>
+                      📅 Mes del reporte
+                    </label>
+                    <select
+                      value={reportMonth}
+                      onChange={(e) => setReportMonth(parseInt(e.target.value))}
+                      style={{
+                        padding: '12px 16px',
+                        borderRadius: '10px',
+                        border: '2px solid rgba(255, 255, 255, 0.2)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        color: 'white',
+                        fontSize: '15px',
+                        fontFamily: 'system-ui, -apple-system, sans-serif',
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        transition: 'all 0.3s ease',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value={0} style={{ backgroundColor: '#1e293b', color: 'white' }}>Enero</option>
+                      <option value={1} style={{ backgroundColor: '#1e293b', color: 'white' }}>Febrero</option>
+                      <option value={2} style={{ backgroundColor: '#1e293b', color: 'white' }}>Marzo</option>
+                      <option value={3} style={{ backgroundColor: '#1e293b', color: 'white' }}>Abril</option>
+                      <option value={4} style={{ backgroundColor: '#1e293b', color: 'white' }}>Mayo</option>
+                      <option value={5} style={{ backgroundColor: '#1e293b', color: 'white' }}>Junio</option>
+                      <option value={6} style={{ backgroundColor: '#1e293b', color: 'white' }}>Julio</option>
+                      <option value={7} style={{ backgroundColor: '#1e293b', color: 'white' }}>Agosto</option>
+                      <option value={8} style={{ backgroundColor: '#1e293b', color: 'white' }}>Septiembre</option>
+                      <option value={9} style={{ backgroundColor: '#1e293b', color: 'white' }}>Octubre</option>
+                      <option value={10} style={{ backgroundColor: '#1e293b', color: 'white' }}>Noviembre</option>
+                      <option value={11} style={{ backgroundColor: '#1e293b', color: 'white' }}>Diciembre</option>
+                    </select>
+                  </div>
+                  
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
+                    }}>
+                      📆 Año del reporte
+                    </label>
+                    <select
+                      value={reportYear}
+                      onChange={(e) => setReportYear(parseInt(e.target.value))}
+                      style={{
+                        padding: '12px 16px',
+                        borderRadius: '10px',
+                        border: '2px solid rgba(255, 255, 255, 0.2)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        color: 'white',
+                        fontSize: '15px',
+                        fontFamily: 'system-ui, -apple-system, sans-serif',
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        transition: 'all 0.3s ease',
+                        outline: 'none'
+                      }}
+                    >
+                      {Array.from({ length: 5 }, (_, i) => {
+                        const year = new Date().getFullYear() - 2 + i;
+                        return (
+                          <option key={year} value={year} style={{ backgroundColor: '#1e293b', color: 'white' }}>
+                            {year}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
                 </div>
                 
                 {/* Botón de envío */}
@@ -1303,6 +1452,14 @@ const Calendar: React.FC = () => {
           onClose={() => setShowCredentialsForm(false)}
         />
       )}
+      
+      {/* Panel de Registro Interno */}
+      <PromoRegistryPanel
+        isVisible={showRegistryPanel}
+        onClose={() => setShowRegistryPanel(false)}
+        selectedMonth={value.getMonth()}
+        selectedYear={value.getFullYear()}
+      />
       </div>
     </div>
   );

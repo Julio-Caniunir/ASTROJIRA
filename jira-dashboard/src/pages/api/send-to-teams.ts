@@ -27,7 +27,7 @@ interface TeamsCard {
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const { webhookUrl } = await request.json();
+    const { webhookUrl, month, year } = await request.json();
 
     if (!webhookUrl) {
       return new Response(JSON.stringify({ error: 'URL del webhook es requerida' }), { status: 400 });
@@ -135,26 +135,35 @@ export const POST: APIRoute = async ({ request }) => {
     const issueDates = new Set<string>();
     
     issues.forEach((issue: any) => {
-      const dates = extractDateFromTitle(issue.fields.summary);
-      dates.forEach(date => {
-        issueDates.add(date.toISOString().split('T')[0]);
+      const extractedDates = extractDateFromTitle(issue.fields.summary);
+      const uniqueDates = new Set<string>();
+      
+      // Eliminar fechas duplicadas del mismo issue
+      extractedDates.forEach(date => {
+        const dateString = date.toISOString().split('T')[0];
+        if (!uniqueDates.has(dateString)) {
+          uniqueDates.add(dateString);
+          issueDates.add(dateString);
+        }
       });
     });
 
-    // Obtener días del mes actual
+    // Obtener días del mes especificado o actual
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const targetYear = year !== undefined ? year : now.getFullYear();
+    const targetMonth = month !== undefined ? month : now.getMonth();
+    const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+    
+    console.log(`📅 Generando reporte para: ${targetMonth + 1}/${targetYear}`);
     
     const daysWithoutPromos: string[] = [];
     
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
+      const date = new Date(targetYear, targetMonth, day);
       const dateString = date.toISOString().split('T')[0];
       
       if (!issueDates.has(dateString)) {
-        const formattedDate = `${day.toString().padStart(2, '0')}/${(month + 1).toString().padStart(2, '0')}/${year}`;
+        const formattedDate = `${day.toString().padStart(2, '0')}/${(targetMonth + 1).toString().padStart(2, '0')}/${targetYear}`;
         daysWithoutPromos.push(formattedDate);
       }
     }
@@ -164,7 +173,7 @@ export const POST: APIRoute = async ({ request }) => {
       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
     
-    const currentMonth = monthNames[month];
+    const reportMonthName = monthNames[targetMonth];
     const totalDays = daysInMonth;
     const daysWithPromos = totalDays - daysWithoutPromos.length;
     const coveragePercentage = Math.round((daysWithPromos / totalDays) * 100);
@@ -193,10 +202,10 @@ export const POST: APIRoute = async ({ request }) => {
       "@type": "MessageCard",
       "@context": "http://schema.org/extensions",
       "themeColor": themeColor,
-      "summary": `${statusIcon} Reporte Promocional ${currentMonth} ${year} - ${statusText}`,
+      "summary": `${statusIcon} Reporte Promocional ${reportMonthName} ${targetYear} - ${statusText}`,
       "sections": [
         {
-          "activityTitle": `🎯 **Dashboard Promocional - ${currentMonth} ${year}**`,
+          "activityTitle": `🎯 **Dashboard Promocional - ${reportMonthName} ${targetYear}**`,
           "activitySubtitle": `${statusIcon} Estado: **${statusText}** | Cobertura: **${coveragePercentage}%**`,
           "facts": [
             {

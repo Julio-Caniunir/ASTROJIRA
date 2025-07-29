@@ -10,12 +10,16 @@ export const POST: APIRoute = async ({ request }) => {
     const body = await request.json();
     const emailTo = body.to || import.meta.env.EMAIL_TO; // Usar el email del parámetro o el del .env como fallback
     const analysisOnly = body.analysisOnly || false;
+    const targetMonth = body.month; // Mes específico (0-11)
+    const targetYear = body.year; // Año específico
     
     // Convertir emailTo a array si no lo es
     const emailRecipients = Array.isArray(emailTo) ? emailTo : [emailTo];
     
     console.log('📧 Destinatarios recibidos:', emailRecipients);
     console.log('🔍 Modo análisis solamente:', analysisOnly);
+    console.log('📅 Mes objetivo:', targetMonth !== undefined ? targetMonth : 'actual');
+    console.log('📅 Año objetivo:', targetYear !== undefined ? targetYear : 'actual');
     
     // Obtener credenciales de Jira
     const email = import.meta.env.JIRA_EMAIL;
@@ -128,10 +132,13 @@ export const POST: APIRoute = async ({ request }) => {
       });
     });
 
-    // Generar rango de fechas SOLO para el mes actual
+    // Generar rango de fechas para el mes especificado o el mes actual
     const today = new Date();
-    const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Último día del mes actual
+    const reportMonth = targetMonth !== undefined ? targetMonth : today.getMonth();
+    const reportYear = targetYear !== undefined ? targetYear : today.getFullYear();
+    
+    const startDate = new Date(reportYear, reportMonth, 1);
+    const endDate = new Date(reportYear, reportMonth + 1, 0); // Último día del mes especificado
     
     const daysWithoutPromos: string[] = [];
     const daysWithPromos: Array<{date: string, promos: Array<{id: string, name: string}>}> = [];
@@ -139,19 +146,32 @@ export const POST: APIRoute = async ({ request }) => {
     const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     
     // Crear un mapa de fechas a issues para obtener detalles
-    const dateToIssues = new Map<string, Array<{id: string, summary: string}>>();
+    const dateToIssues = new Map<string, Array<{id: string; summary: string}>>();
     
     issues.forEach((issue: any) => {
       const extractedDates = extractDateFromTitle(issue.fields.summary);
+      const uniqueDates = new Set<string>();
+      
+      // Eliminar fechas duplicadas del mismo issue
       extractedDates.forEach(date => {
-        const dateStr = date.toDateString();
+        uniqueDates.add(date.toDateString());
+      });
+      
+      uniqueDates.forEach(dateStr => {
         if (!dateToIssues.has(dateStr)) {
           dateToIssues.set(dateStr, []);
         }
-        dateToIssues.get(dateStr)!.push({
-          id: issue.key,
-          summary: issue.fields.summary
-        });
+        
+        // Verificar si el issue ya existe para esta fecha
+        const existingIssues = dateToIssues.get(dateStr)!;
+        const issueExists = existingIssues.some(existingIssue => existingIssue.id === issue.key);
+        
+        if (!issueExists) {
+          existingIssues.push({
+            id: issue.key,
+            summary: issue.fields.summary
+          });
+        }
       });
     });
     
@@ -188,9 +208,9 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Crear contenido del correo
-    const currentMonth = monthNames[today.getMonth()];
+    const reportMonthName = monthNames[reportMonth];
     const totalDays = endDate.getDate();
-    const emailSubject = `🚨 Reporte de Promociones ${currentMonth} - ${daysWithoutPromos.length} días sin promociones`;
+    const emailSubject = `🚨 Reporte de Promociones ${reportMonthName} ${reportYear} - ${daysWithoutPromos.length} días sin promociones`;
     const emailBody = `
       <!DOCTYPE html>
       <html lang="es">
@@ -208,7 +228,7 @@ export const POST: APIRoute = async ({ request }) => {
               📅 Reporte de Promociones
             </h1>
             <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 18px; font-weight: 300;">
-              ${currentMonth} ${today.getFullYear()}
+              ${reportMonthName} ${reportYear}
             </p>
           </div>
           
@@ -333,7 +353,7 @@ export const POST: APIRoute = async ({ request }) => {
             to: recipient,
             subject: emailSubject,
             html: emailBody,
-            from: 'julio.caniunir@estelarbet.com'
+            from: 'ti.estelarbet@estelarbet.com'
           });
           
           console.log(`📧 Resultado para ${recipient}:`, result);

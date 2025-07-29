@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Promo Registry Data</title>
+</head>
+<body>
+    <h1>Debug Promo Registry Data</h1>
+    <div id="output"></div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.innerHTML += '<p>' + message + '</p>';
+            console.log(message);
+        }
+        
+        // Check localStorage data
+        log('=== CHECKING LOCALSTORAGE DATA ===');
+        
+        const promoData = localStorage.getItem('promo_registry_data');
+        if (promoData) {
+            try {
+                const parsed = JSON.parse(promoData);
+                log('✅ Found promo_registry_data in localStorage');
+                log('📊 Total records: ' + parsed.records.length);
+                log('✅ Active records: ' + parsed.records.filter(r => r.status === 'active').length);
+                log('🗑️ Deleted records: ' + parsed.records.filter(r => r.status === 'deleted').length);
+                log('📅 Last sync: ' + parsed.lastSync);
+                
+                if (parsed.records.length > 0) {
+                    log('\n=== SAMPLE RECORDS ===');
+                    parsed.records.slice(0, 5).forEach((record, index) => {
+                        log(`Record ${index + 1}: ${record.date} - ${record.issueKey} - ${record.status}`);
+                    });
+                } else {
+                    log('❌ NO RECORDS FOUND IN DATABASE');
+                }
+            } catch (e) {
+                log('❌ Error parsing promo_registry_data: ' + e.message);
+            }
+        } else {
+            log('❌ No promo_registry_data found in localStorage');
+        }
+        
+        // Check backup data
+        const backupData = localStorage.getItem('promo_registry_backup');
+        if (backupData) {
+            log('\n✅ Found backup data in localStorage');
+        } else {
+            log('\n❌ No backup data found in localStorage');
+        }
+        
+        // Check all localStorage keys
+        log('\n=== ALL LOCALSTORAGE KEYS ===');
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            log('Key: ' + key);
+        }
+    </script>
+</body>
+</html>

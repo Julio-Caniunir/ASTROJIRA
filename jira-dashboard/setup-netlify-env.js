@@ -90,28 +90,7 @@ function setNetlifyEnvVar(key, value) {
   }
 }
 
-function updateRedirectUri(envVars) {
-  try {
-    const result = execSync('netlify status', { stdio: 'pipe', encoding: 'utf8' });
-    const urlMatch = result.match(/URL:\s*(https:\/\/[^\s]+)/i);
-    
-    if (urlMatch && urlMatch[1]) {
-      const siteUrl = urlMatch[1];
-      const newRedirectUri = `${siteUrl}/api/auth/callback`;
-      
-      log(`\n📝 Actualización recomendada:`, 'yellow');
-      log(`MICROSOFT_REDIRECT_URI debería ser: ${newRedirectUri}`, 'cyan');
-      
-      if (envVars.MICROSOFT_REDIRECT_URI && envVars.MICROSOFT_REDIRECT_URI.includes('localhost')) {
-        log(`\n⚠️  Detectada URL de localhost en MICROSOFT_REDIRECT_URI`, 'yellow');
-        log(`Actualizando automáticamente a la URL de producción...`, 'yellow');
-        envVars.MICROSOFT_REDIRECT_URI = newRedirectUri;
-      }
-    }
-  } catch (error) {
-    log('⚠️  No se pudo obtener la URL del sitio de Netlify', 'yellow');
-  }
-}
+// Función updateRedirectUri eliminada - ya no se usa Microsoft Azure
 
 function main() {
   log('🚀 Configurador de Variables de Entorno para Netlify', 'bright');
@@ -162,9 +141,8 @@ function main() {
 
   log('\n📋 Próximos pasos:', 'blue');
   log('1. Verifica las variables en tu dashboard de Netlify', 'cyan');
-  log('2. Actualiza MICROSOFT_CLIENT_ID y MICROSOFT_CLIENT_SECRET con valores reales', 'cyan');
-  log('3. Redeploy tu sitio para que las variables tomen efecto', 'cyan');
-  log('4. Prueba la funcionalidad que depende de estas variables', 'cyan');
+  log('2. Redeploy tu sitio para que las variables tomen efecto', 'cyan');
+  log('3. Prueba la funcionalidad que depende de estas variables', 'cyan');
 
   log('\n🔗 Dashboard de Netlify: https://app.netlify.com/', 'magenta');
 }

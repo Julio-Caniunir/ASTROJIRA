@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Registry Status</title>
+</head>
+<body>
+    <h1>Test Promo Registry Status</h1>
+    <div id="output"></div>
+    <button onclick="checkRegistryStatus()">Check Registry Status</button>
+    <button onclick="forceSync()">Force Sync with Jira</button>
+    <button onclick="clearRegistry()">Clear Registry</button>
+    <button onclick="addTestData()">Add Test Data</button>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.innerHTML += '<p>' + message + '</p>';
+            console.log(message);
+        }
+        
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+        
+        function checkRegistryStatus() {
+            clearOutput();
+            log('=== CHECKING REGISTRY STATUS ===');
+            
+            // Verificar localStorage
+            const promoData = localStorage.getItem('promo-registry-data');
+            if (promoData) {
+                try {
+                    const data = JSON.parse(promoData);
+                    log(`✅ Datos encontrados en localStorage`);
+                    log(`Total records: ${data.records ? data.records.length : 0}`);
+                    log(`Active records: ${data.records ? data.records.filter(r => r.status === 'active').length : 0}`);
+                    log(`Deleted records: ${data.records ? data.records.filter(r => r.status === 'deleted').length : 0}`);
+                    log(`Last sync: ${data.lastSync || 'Never'}`);
+                    
+                    if (data.records && data.records.length > 0) {
+                        log('');
+                        log('=== SAMPLE RECORDS ===');
+                        data.records.slice(0, 5).forEach((record, index) => {
+                            log(`${index + 1}. ${record.date} - ${record.issueKey} (${record.status})`);
+                            log(`   ${record.issueSummary}`);
+                        });
+                    }
+                } catch (error) {
+                    log(`❌ Error parsing localStorage data: ${error.message}`);
+                }
+            } else {
+                log('❌ No data found in localStorage');
+            }
+            
+            // Verificar todas las claves de localStorage
+            log('');
+            log('=== ALL LOCALSTORAGE KEYS ===');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                log(`${i + 1}. ${key}`);
+            }
+        }
+        
+        async function forceSync() {
+            clearOutput();
+            log('=== FORCING SYNC WITH JIRA ===');
+            
+            try {
+                // Obtener datos de Jira
+                log('Fetching Jira issues...');
+                const response = await fetch('/api/all-issues');
+                const data = await response.json();
+                const issues = data.issues || [];
+                
+                log(`Got ${issues.length} issues from Jira`);
+                
+                // Función extractDateFromTitle (copiada del código)
+                function extractDateFromTitle(title) {
+                    const dates = [];
+                    const currentYear = new Date().getFullYear();
+                    
+                    const patterns = [
+                        /\b(\d{1,2})\s+DE\s+(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\b/gi,
+                        /\b(\d{1,2})\s+(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE|ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC)\b/gi,
+                        /\b(\d{1,2})\/(\d{1,2})\)/g,
+                        /\b(\d{1,2})\/(\d{1,2})\b/g,
+                        /\b(\d{2})(\d{2})\b/g,
+                        /\b(\d{1,2})\s+Y\s+(\d{1,2})\s+DE\s+(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)\b/gi
+                    ];
+                    
+                    const monthMap = {
+                        'ENERO': 0, 'ENE': 0, 'FEBRERO': 1, 'FEB': 1, 'MARZO': 2, 'MAR': 2,
+                        'ABRIL': 3, 'ABR': 3, 'MAYO': 4, 'MAY': 4, 'JUNIO': 5, 'JUN': 5,
+                        'JULIO': 6, 'JUL': 6, 'AGOSTO': 7, 'AGO': 7, 'SEPTIEMBRE': 8, 'SEP': 8,
+                        'OCTUBRE': 9, 'OCT': 9, 'NOVIEMBRE': 10, 'NOV': 10, 'DICIEMBRE': 11, 'DIC': 11
+                    };
+                    
+                    patterns.forEach((pattern, index) => {
+                        let match;
+                        while ((match = pattern.exec(title)) !== null) {
+                            if (index <= 1) {
+                                const day = parseInt(match[1]);
+                                const monthStr = match[2].toUpperCase();
+                                const month = monthMap[monthStr];
+                                
+                                if (month !== undefined && day >= 1 && day <= 31) {
+                                    const date = new Date(currentYear, month, day);
+                                    dates.push(date);
+                                    
+                                    // Para rangos (patrón 5)
+                                    if (index === 5 && match[3]) {
+                                        const day2 = parseInt(match[2]);
+                                        if (day2 >= 1 && day2 <= 31) {
+                                            const date2 = new Date(currentYear, month, day2);
+                                            dates.push(date2);
+                                        }
+                                    }
+                                }
+                            } else if (index === 2 || index === 3) {
+                                const day = parseInt(match[1]);
+                                const month = parseInt(match[2]) - 1;
+                                
+                                if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+                                    const date = new Date(currentYear, month, day);
+                                    dates.push(date);
+                                }
+                            } else if (index === 4) {
+                                const day = parseInt(match[1]);
+                                const month = parseInt(match[2]) - 1;
+                                
+                                if (month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+                                    const date = new Date(currentYear, month, day);
+                                    dates.push(date);
+                                }
+                            }
+                        }
+                    });
+                    
+                    return dates;
+                }
+                
+                // Extraer fechas de los títulos
+                const allExtractedDatesWithIssue = [];
+                let issuesWithDates = 0;
+                
+                issues.forEach(issue => {
+                    const extractedDates = extractDateFromTitle(issue.fields.summary);
+                    if (extractedDates.length > 0) {
+                        issuesWithDates++;
+                        extractedDates.forEach(date => {
+                            allExtractedDatesWithIssue.push({
+                                date: date,
+                                issueKey: issue.key,
+                                issueSummary: issue.fields.summary
+                            });
+                        });
+                    }
+                });
+                
+                log(`Found ${issuesWithDates} issues with dates in titles`);
+                log(`Total extracted dates: ${allExtractedDatesWithIssue.length}`);
+                
+                if (allExtractedDatesWithIssue.length > 0) {
+                    log('');
+                    log('=== SAMPLE EXTRACTED DATES ===');
+                    allExtractedDatesWithIssue.slice(0, 10).forEach((item, index) => {
+                        log(`${index + 1}. ${item.date.toLocaleDateString('es-ES')} - ${item.issueKey}`);
+                        log(`   ${item.issueSummary}`);
+                    });
+                    
+                    // Sincronizar con el API
+                    log('');
+                    log('Syncing with promo registry API...');
+                    
+                    const syncResponse = await fetch('/api/promo-registry', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'sync-jira',
+                            jiraPromos: allExtractedDatesWithIssue
+                        })
+                    });
+                    
+                    if (syncResponse.ok) {
+                        const syncResult = await syncResponse.json();
+                        log('✅ Sync completed successfully');
+                        log(JSON.stringify(syncResult, null, 2));
+                    } else {
+                        log(`❌ Sync failed: ${syncResponse.status} ${syncResponse.statusText}`);
+                    }
+                } else {
+                    log('❌ No dates found in any issue titles');
+                }
+                
+            } catch (error) {
+                log(`❌ Error during sync: ${error.message}`);
+            }
+        }
+        
+        function clearRegistry() {
+            if (confirm('¿Estás seguro de que quieres limpiar todos los datos del registro?')) {
+                localStorage.removeItem('promo-registry-data');
+                localStorage.removeItem('promo-registry-backup');
+                log('✅ Registry cleared');
+            }
+        }
+        
+        async function addTestData() {
+            clearOutput();
+            log('=== ADDING TEST DATA ===');
+            
+            const testPromos = [
+                {
+                    date: new Date('2025-01-17'),
+                    issueKey: 'TEST-001',
+                    issueSummary: 'Test Promo 17 DE ENERO - Sample promotion'
+                },
+                {
+                    date: new Date('2025-01-21'),
+                    issueKey: 'TEST-002',
+                    issueSummary: 'Test Promo 21/01 - Another promotion'
+                }
+            ];
+            
+            try {
+                const response = await fetch('/api/promo-registry', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'sync-jira',
+                        jiraPromos: testPromos
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    log('✅ Test data added successfully');
+                    log(JSON.stringify(result, null, 2));
+                } else {
+                    log(`❌ Failed to add test data: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                log(`❌ Error adding test data: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
