@@ -14,13 +14,195 @@ const authStatus = Astro.url.searchParams.get('auth');
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Jira Dashboard</title>
+    <style>
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      
+      .modal-content {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        position: relative;
+      }
+      
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e5e5e5;
+      }
+      
+      .modal-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 0;
+        color: #333;
+      }
+      
+      .close-button {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #666;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .close-button:hover {
+        color: #333;
+      }
+      
+      .file-upload-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      
+      .inputs-box {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      
+      .form-label {
+        font-weight: 600;
+        color: #374151;
+        font-size: 0.875rem;
+      }
+      
+      .form-input {
+        padding: 0.75rem;
+        border: 2px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        transition: border-color 0.2s;
+      }
+      
+      .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+      
+      .open-modal-btn {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        z-index: 1001;
+        transition: background-color 0.2s;
+      }
+      
+      .open-modal-btn:hover {
+        background: #2563eb;
+      }
+      
+      .hidden {
+        display: none;
+      }
+    </style>
   </head>
   <body>
+    <!-- Botón para abrir modal -->
+    <button class="open-modal-btn" onclick="openModal()">Abrir Modal de Prueba</button>
+    
+    <!-- Modal -->
+    <div id="testModal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Subir Documentos DNI</h2>
+          <button class="close-button" onclick="closeModal()">&times;</button>
+        </div>
+        
+        <div class="file-upload-container">
+          <div class="inputs-box">
+            <label class="form-label" for="frontDNI">Parte frontal del DNI:</label>
+            <input 
+              type="file" 
+              id="frontDNI" 
+              name="frontDNI" 
+              accept="image/*,image/*;capture=camera" 
+              class="form-input"
+            />
+          </div>
+          
+          <div class="inputs-box">
+            <label class="form-label" for="backDNI">Parte trasera del DNI:</label>
+            <input 
+              type="file" 
+              id="backDNI" 
+              name="backDNI" 
+              accept="image/*" 
+              class="form-input"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <JiraIssues 
       client:only="react" 
       userInfo={userInfo}
       isAuthenticated={!!userInfo}
       authStatus={authStatus}
     />
+    
+    <script>
+      // Funciones globales para el botón
+      window.openModal = function() {
+        document.getElementById('testModal').classList.remove('hidden');
+      }
+      
+      window.closeModal = function() {
+        document.getElementById('testModal').classList.add('hidden');
+      }
+      
+      // Esperar a que el DOM esté completamente cargado
+      document.addEventListener('DOMContentLoaded', function() {
+        // Cerrar modal al hacer clic fuera del contenido
+        const modal = document.getElementById('testModal');
+        if (modal) {
+          modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+              window.closeModal();
+            }
+          });
+        }
+        
+        // Cerrar modal con tecla Escape
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape') {
+            window.closeModal();
+          }
+        });
+      });
+    </script>
   </body>
 </html>
